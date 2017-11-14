@@ -14,6 +14,9 @@
 
 #include "data\fw.html.gz.h"
 #include "data\status.html.gz.h"
+#include "data\pure-min.css.gz.h"
+#include "data\side-menu.css.gz.h"
+#include "data\side-menu.js.gz.h"
 #include "data\jquery-3.2.1.min.js.gz.h"
 #if DEVELOPPER_MODE
 #include "data\test.html.gz.h"
@@ -38,7 +41,7 @@ WebFP webFP;
 //-----------------------------------------------------------------------
 void InitSystemWebServer(AsyncWebServer &server) {
 
-  server.on("/status", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
     AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/html"), (const uint8_t*)statushtmlgz, sizeof(statushtmlgz));
     response->addHeader("Content-Encoding", "gzip");
     request->send(response);
@@ -76,6 +79,9 @@ void InitSystemWebServer(AsyncWebServer &server) {
   }, [](AsyncWebServerRequest * request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     if (!index) {
       Serial.printf("Update Start: %s\n", filename.c_str());
+      //WirelessFilsPilotes
+      digitalWrite(14, HIGH); //light down red
+      digitalWrite(12, HIGH); //light down green
       Update.runAsync(true);
       if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
         Update.printError(Serial);
@@ -95,8 +101,26 @@ void InitSystemWebServer(AsyncWebServer &server) {
     }
   });
 
+  server.on("/pure-min.css", HTTP_GET, [](AsyncWebServerRequest * request) {
+    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/css"), (const uint8_t*)puremincssgz, sizeof(puremincssgz));
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+  });
+
+  server.on("/side-menu.css", HTTP_GET, [](AsyncWebServerRequest * request) {
+    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/css"), (const uint8_t*)sidemenucssgz, sizeof(sidemenucssgz));
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+  });
+
+  server.on("/side-menu.js", HTTP_GET, [](AsyncWebServerRequest * request) {
+    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/javascript"), (const uint8_t*)sidemenujsgz, sizeof(sidemenujsgz));
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+  });
+
   server.on("/jquery-3.2.1.min.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/html"), (const uint8_t*)jquery321minjsgz, sizeof(jquery321minjsgz));
+    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/javascript"), (const uint8_t*)jquery321minjsgz, sizeof(jquery321minjsgz));
     response->addHeader("Content-Encoding", "gzip");
     request->send(response);
   });
@@ -140,7 +164,10 @@ void setup(void) {
   bool skipExistingConfig = false;
   pinMode(RESCUE_BTN_PIN, (RESCUE_BTN_PIN != 16) ? INPUT_PULLUP : INPUT);
   for (int i = 0; i < 100 && skipExistingConfig == false; i++) {
-    if (digitalRead(RESCUE_BTN_PIN) == LOW) skipExistingConfig = true;
+    if (digitalRead(RESCUE_BTN_PIN) == LOW) {
+      skipExistingConfig = true;
+      digitalWrite(14, HIGH); //light down red
+    }
     delay(50);
   }
 

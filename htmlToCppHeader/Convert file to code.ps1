@@ -69,3 +69,18 @@ $file="test.html"
 Compress-7Zip -Path $path -Filter $file -ArchiveFileName ($path+"\"+$file+".gz") -CompressionLevel Ultra
 BinaryToCppHeader($path+"\"+$file+".gz")
 Remove-Item ($path+"\"+$file+".gz")
+
+$file="pure-min.css"
+Compress-7Zip -Path $path -Filter $file -ArchiveFileName ($path+"\"+$file+".gz") -CompressionLevel Ultra
+BinaryToCppHeader($path+"\"+$file+".gz")
+Remove-Item ($path+"\"+$file+".gz")
+
+$file="side-menu.css"
+Compress-7Zip -Path $path -Filter $file -ArchiveFileName ($path+"\"+$file+".gz") -CompressionLevel Ultra
+BinaryToCppHeader($path+"\"+$file+".gz")
+Remove-Item ($path+"\"+$file+".gz")
+
+$file="side-menu.js"
+Compress-7Zip -Path $path -Filter $file -ArchiveFileName ($path+"\"+$file+".gz") -CompressionLevel Ultra
+BinaryToCppHeader($path+"\"+$file+".gz")
+Remove-Item ($path+"\"+$file+".gz")

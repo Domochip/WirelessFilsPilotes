@@ -22,10 +22,10 @@ FilsPilotes States :
 - 51-99 : Confort
 */
 
-#define VERSION_NUMBER "3.0.2"
+#define VERSION_NUMBER "3.1.0"
 
 //model is 1, 4 or 8
-#define MODEL_WFP 8
+#define MODEL_WFP 1
 
 
 //Enable developper mode (SPIFFSEditor is used)
@@ -35,7 +35,7 @@ FilsPilotes States :
 #define SERIAL_SPEED 115200
 
 //Choose Pin used to boot in Rescue Mode
-#define RESCUE_BTN_PIN 2
+#define RESCUE_BTN_PIN 16
 
 
 //construct Version text
