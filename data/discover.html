@@ -54,7 +54,11 @@
                     </form>
                 
                     <h2 class="content-subhead">Modules Found <span id="l2"><h6 style="display:inline"><b></b></h6></span></h2>
-                    <span id="ModuleList"></span>
+                    <span ></span>
+                    <table id="ModuleListTable" class="pure-table pure-table-horizontal" style="display:none">
+                        <thead><tr><th>IP</th><th>Model</th><th>Version</th><th>S/N</th></tr></thead>
+                        <tbody id='ModuleListBody'></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -93,7 +97,8 @@
                 $(range).each(function() {
                     var i = this;
                     $.getJSON("http://" + networkRange + i + "/ffffffff", function(discoJSON) {
-                         $("#ModuleList").append("<div>"+networkRange + i+" "+discoJSON.m+" "+discoJSON.v+" "+discoJSON.sn+"</div>");
+                         $("#ModuleListTable").show();
+                         $("#ModuleListBody").append('<tr><td><a href="http://'+networkRange+i+'">'+networkRange+i+'</a></td><td>'+discoJSON.m+'</td><td>'+discoJSON.v+'</td><td>'+discoJSON.sn+'</td></tr>');
                     });
                 });
             });
