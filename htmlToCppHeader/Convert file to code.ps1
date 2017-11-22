@@ -65,7 +65,7 @@ Compress-7Zip -Path $path -Filter $file -ArchiveFileName ($path+"\"+$file+".gz")
 BinaryToCppHeader($path+"\"+$file+".gz")
 Remove-Item ($path+"\"+$file+".gz")
 
-$file="test.html"
+$file="discover.html"
 Compress-7Zip -Path $path -Filter $file -ArchiveFileName ($path+"\"+$file+".gz") -CompressionLevel Ultra
 BinaryToCppHeader($path+"\"+$file+".gz")
 Remove-Item ($path+"\"+$file+".gz")

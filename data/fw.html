@@ -7,7 +7,7 @@
         <meta name="description" content="WFP1/4/8">
         <title>Domochip WFP1/4/8</title>
         
-        <link rel="stylesheet" href="pure-min.css">
+        <link rel="stylesheet" href="pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
         <link rel="stylesheet" href="side-menu.css">
 
             <script type="text/javascript">
@@ -99,7 +99,7 @@
         $("#f1").submit(function(evt){
             evt.preventDefault();
             if(!firmwareValidation()) return;
-            $('#fi1').prop("disabled",true);
+            $('#fi1').prop("readonly",true);
             $('#sub1').prop("disabled",true);
             $.ajax({
                 url:'/fw',type:'POST',cache: false,contentType: false,processData: false,
@@ -114,7 +114,7 @@
                 error:function(){
                     $('#r1').html('<span style="color: red;"><b>Failed</b></span>');
                     $('#f1').trigger('reset');
-                    $('#fi1').prop("disabled",false);
+                    $('#fi1').prop("readonly",false);
                     $('#sub1').prop("disabled",false);
                 }
             });

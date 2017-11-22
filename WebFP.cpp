@@ -280,41 +280,47 @@ void WebFP::Run() {
 
 void WebFP::InitWebServer(AsyncWebServer &server) {
 
-  server.on("/setFPState", HTTP_GET, [this](AsyncWebServerRequest * request) {
+  server.on("/setFP", HTTP_GET, [this](AsyncWebServerRequest * request) {
 
-    //check FP param is there
-    if (!request->hasParam(F("FP"))) {
-      request->send(400, F("text/html"), F("Missing FP parameter"));
+    byte fpPassed = 0;
+    byte fpValues[8];
+
+
+    char paramName[4] = {'F', 'P', '1', 0};
+    //for each FP
+    for (byte i = 0; i < _modelWFP; i++) {
+
+      //build paramName
+      paramName[2] = '1' + i;
+
+      //check FP param is there
+      if (request->hasParam(paramName)) {
+
+        //convert fpValue
+        int fpValue = request->getParam(paramName)->value().toInt();
+
+        //check value is correct
+        if ((fpValue != 0 || request->getParam(paramName)->value() == "0") && fpValue < 100) {
+
+          //put it in table
+          fpPassed += (1 << i);
+          fpValues[i] = fpValue;
+        }
+      }
+    }
+
+    //if no fp order passed
+    if (!fpPassed) {
+      //answer with error and return
+      request->send(400, F("text/html"), F("No valid order received"));
       return;
     }
 
-    //convert fpNumber
-    int fpNumber = request->getParam(F("FP"))->value().toInt();
-
-    //check fpNumber (first is 1 for URL request)
-    if (!fpNumber || fpNumber > _modelWFP) {
-      request->send(400, F("text/html"), F("Incorrect FP number"));
-      return;
+    //for each FP
+    for (byte i = 0; i < _modelWFP; i++) {
+      //fp has been passed then apply
+      if (fpPassed & (1 << i)) setFP(i, fpValues[i]);
     }
-
-    //decrement fpNumber to match 0 based internal logic
-    fpNumber--;
-
-    //check state param is there
-    if (!request->hasParam(F("state"))) {
-      request->send(400, F("text/html"), F("Missing state parameter"));
-      return;
-    }
-
-    //convert stateNumber
-    int stateNumber = request->getParam(F("state"))->value().toInt();
-    //check stateNumber
-    if ((stateNumber == 0 && request->getParam(F("state"))->value() != "0") || stateNumber > 99) {
-      request->send(400, F("text/html"), F("Wrong state parameter"));
-      return;
-    }
-
-    setFP(fpNumber, stateNumber);
 
     request->send(200);
   });

@@ -6,7 +6,7 @@
         <meta name="description" content="WFP1/4/8">
         <title>Domochip WFP1/4/8</title>
         
-        <link rel="stylesheet" href="pure-min.css">
+        <link rel="stylesheet" href="pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
         <link rel="stylesheet" href="side-menu.css">
     </head>
     <body>
@@ -40,19 +40,54 @@
                 <div class="content">
                     <form class="pure-form pure-form-aligned" id='f' style='display:none'>
                         <fieldset>
+                            <h2 class="content-subhead">Core</h2>
                             <div class="pure-control-group">
-                                    <label for="name">SSID</label>
+                                    <label for="s">SSID</label>
                                     <input type='text' id='s' name='s' maxlength='32' list="wnl">
-                                    <select id="wnl"><option>Loading...</option></select>
+                                    <select id="wnl"><option>Searching...</option></select>
                             </div>
                             <div class="pure-control-group">
-                                <label for="name">Password</label>
+                                <label for="p">Password</label>
                                 <input type='password' id='p' name='p' maxlength='64'>
                             </div>
                             <div class="pure-control-group">
-                                <label for="name">Hostname</label>
+                                <label for="h">Hostname</label>
                                 <input type='text' id='h' name='h' maxlength='24'>
                             </div>
+                            <div class="pure-controls">
+                                <label for="staticip" class="pure-checkbox">
+                                    <input id='staticip' name='staticip' type="checkbox"> Static IP
+                                </label>
+                            </div>
+                            <div id='staticipgroup' style='display:none'>
+                                <div class="pure-control-group">
+                                    <label for="ip">IP</label>
+                                    <input type='text' id='ip' name='ip' pattern='((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$' required>
+                                    <span class="pure-form-message-inline">*</span>
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="gw">Gateway</label>
+                                    <input type='text' id='gw' name='gw' pattern='((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$' required>
+                                    <span class="pure-form-message-inline">*</span>
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="mask">NetMask</label>
+                                    <input type='text' id='mask' name='mask' pattern='((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$' required>
+                                    <span class="pure-form-message-inline">*</span>
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="dns1">DNS 1</label>
+                                    <input type='text' id='dns1' name='dns1' pattern='((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$'>
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="dns2">DNS 2</label>
+                                    <input type='text' id='dns2' name='dns2' pattern='((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}$'>
+                                </div>
+                            </div>
+
+                            <h2 class="content-subhead">WFP</h2>
+                            <div id='fpnl'></div>
+
                             <div class="pure-controls">
                                 <input type='submit' value='Submit Config' class="pure-button pure-button-primary">
                             </div>
@@ -79,30 +114,62 @@
         </script>
         <script>
 
+            function getUserIP(n){function e(e){t[e]||n(e),t[e]=!0}var a=new(window.RTCPeerConnection||window.mozRTCPeerConnection||window.webkitRTCPeerConnection)({iceServers:[]}),c=function(){},t={},i=/([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/g;try{a.createDataChannel("")}catch(e){return void n("")}a.createOffer(function(n){n.sdp.split("\n").forEach(function(n){n.indexOf("candidate")<0||n.match(i).forEach(e)}),a.setLocalDescription(n,c,c)},c),a.onicecandidate=function(n){n&&n.candidate&&n.candidate.candidate&&n.candidate.candidate.match(i)&&n.candidate.candidate.match(i).forEach(e)}}
+
+            function onStaticIPChange(){
+                if($("#staticip").prop("checked")){
+                    $("#ip").prop("required",true);
+                    $("#gw").prop("required",true);
+                    $("#mask").prop("required",true);
+                    $("#staticipgroup").show();
+                }
+                else{
+                    $("#ip").prop("required",false);
+                    $("#gw").prop("required",false);
+                    $("#mask").prop("required",false);
+                    $("#staticipgroup").hide();
+                }
+            };
+            $("#staticip").change(onStaticIPChange);
 
             $("#f").submit(function(event){
+                if(!$("#staticip").prop("checked")){
+                    $("#ip").val('');
+                    $("#gw").val('');
+                    $("#mask").val('');
+                    $("#dns1").val('');
+                    $("#dns2").val('');
+                }
                 $("#r").html("Saving Configuration...");
                 $.post("/sc",$("#f").serialize(),function(){ 
                     $("#f").hide();
                     var reload10sec=document.createElement('script');
-                    reload10sec.text='var count=9;var cdi=setInterval(function(){$("#cd").text(count);if(!count){clearInterval(cdi);location.reload();}count--;},1000);';
+                    if($("#staticip").prop("checked") && $("#ip").val()!="0.0.0.0") reload10sec.text='var count=9;var cdi=setInterval(function(){$("#cd").text(count);if(!count){clearInterval(cdi);location.assign("http://' + $("#ip").val() + '/config");}count--;},1000);';
+                    else reload10sec.text='var count=9;var cdi=setInterval(function(){$("#cd").text(count);if(!count){clearInterval(cdi);location.reload();}count--;},1000);';
                     $('#r').html('<h3><b>Configuration saved <span style="color: green;">successfully</span>. System is restarting now.</b></h3>This page will be reloaded in <span id="cd">10</span>sec.').append(reload10sec);
                 });
                 event.preventDefault();
             });
 
-            $(document).ready(function(){
-                $.getJSON("/gc", function(GC){
+            var getNetworkList = function (firstCall=1){
 
-                    $("#s").val(GC.s);
-                    $("#p").val(GC.p);
-                    $("#h").val(GC.h);
+                //allow to trigger refresh of wifi networks
+                if(firstCall==1) $.getJSON("/wnl", function(WNL){});
 
-                    $("#f").show();
-                    
-                    $.getJSON("/wnl", function(WNL){
+                $.getJSON("/wnl", function(WNL){
+                    if(WNL.r==-2){ //if scan failed
                         $("#wnl").empty();
-                        if(WNL.wnl.length==0) $("#wnl").append('<option>No Network Found</option>');
+                        $("#wnl").append('<option>No Network Found</option>');
+                    }
+                    else if(WNL.r==-1){ //if scan is in progress
+                        //try agin this own function without first wnl get
+                        setTimeout(getNetworkList,2000,0);
+                    }
+                    else{ //we got result
+                        $("#wnl").empty();
+                        if(WNL.r==0){
+                            $("#wnl").append('<option>No Network Found</option>');
+                        }
                         else{
                             $("#wnl").append('<option>Choose Your Network</option>');
                             $.each(WNL.wnl,function(k,v){
@@ -111,9 +178,31 @@
                                 });
                             $("#wnl").change(function(){$("#s").val($("#wnl").val())});
                         }
-                    });
+                    }
+                });
+            }
 
+            $(document).ready(function(){
+                $.getJSON("/gc", function(GC){
+
+                    $("#fpnl").innerHTML='';
+                    $.each(GC,function(k,v){
+                        if(k.match(/fp[0-9]n/)){
+                            var i=k[2];
+                            $("#fpnl").append('<div class="pure-control-group"><label for="fp'+i+'n">FP'+i+' Name</label><input id="fp'+i+'n" name="fp'+i+'n" type="text"></div>');
+                        }
+                        $('#'+k).val(v);
+                    })
+
+                    if(GC.ip && GC.ip!='' && GC.ip!='0.0.0.0') $("#staticip").prop("checked",true);
+
+
+                    onStaticIPChange();
+
+                    $("#f").show();
                     $("#l1").fadeOut();
+
+                    getNetworkList();
                 })
                 .fail(function(){
                     $("#l1").html('<h6 style="display:inline;color:red;"><b> Failed</b></h6>');
