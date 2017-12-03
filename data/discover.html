@@ -93,7 +93,7 @@
                 var networkRange=$("#nr").val().split(".").map(Number);
                 networkRange=networkRange[0]+'.'+networkRange[1]+'.'+networkRange[2]+'.';
 
-                $("#ModuleList").empty();
+                $("#ModuleListBody").empty();
                 $(range).each(function() {
                     var i = this;
                     $.getJSON("http://" + networkRange + i + "/ffffffff", function(discoJSON) {

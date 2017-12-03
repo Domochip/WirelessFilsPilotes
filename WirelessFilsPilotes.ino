@@ -79,7 +79,7 @@ void InitSystemWebServer(AsyncWebServer &server) {
   server.on("/gs0", HTTP_GET, [](AsyncWebServerRequest * request) {
 
     unsigned long minutes = millis() / 60000;
-    char ssJSON[120];
+    char ssJSON[150];
     snprintf_P(ssJSON, sizeof(ssJSON), PSTR("{\"sn\":\"%08x\",\"b\":\"%s\",\"u\":\"%dd%dh%dm\""), ESP.getChipId(), VERSION, (byte)(minutes / 1440), (byte)(minutes / 60 % 24), (byte)(minutes % 60));
     snprintf_P(ssJSON + strlen(ssJSON), sizeof(ssJSON) - strlen(ssJSON), PSTR(",\"ap\":\"%s\",\"ai\":\"%s\""), ((WiFi.getMode()&WIFI_AP) ? "on" : "off"), ((WiFi.getMode()&WIFI_AP) ? WiFi.softAPIP().toString().c_str() : "-"));
     snprintf_P(ssJSON + strlen(ssJSON), sizeof(ssJSON) - strlen(ssJSON), PSTR(",\"sta\":\"%s\",\"stai\":\"%s\""), (config.ssid[0] ? "on" : "off"), (config.ssid[0] ? (WiFi.isConnected() ? ((WiFi.localIP().toString() + ' ' + (config.ip ? "Static" : "DHCP")).c_str()) : "Not Connected") : "-"));

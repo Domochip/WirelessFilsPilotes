@@ -22,10 +22,10 @@
   - 51-99 : Confort
 */
 
-#define VERSION_NUMBER "3.2.1"
+#define VERSION_NUMBER "3.2.2"
 
 //model is 1, 4 or 8
-#define MODEL_WFP 8
+#define MODEL_WFP 1
 
 #if MODEL_WFP==1
 #define MODEL "WFP1"

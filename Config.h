@@ -20,7 +20,6 @@ class Config {
     char ssid[32 + 1] = {0};
     char password[64 + 1] = {0};
     char hostname[24 + 1] = {0};
-
     uint32_t ip = 0;
     uint32_t gw = 0;
     uint32_t mask = 0;
@@ -34,7 +33,6 @@ class Config {
       ssid[0] = 0;
       password[0] = 0;
       hostname[0] = 0;
-
       ip = 0;
       gw = 0;
       mask = 0;
