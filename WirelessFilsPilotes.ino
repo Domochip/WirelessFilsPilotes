@@ -1,254 +1,379 @@
 #include <ESP8266WiFi.h>
-#include <FS.h>
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <SPIFFSEditor.h>
-
-//Please, have a look at WirelessFilsPilotes.h for information and configuration of Arduino project
-
-#include "WifiMan.h"
-#include "Config.h"
-#include "WebFP.h"
+#include <ESP8266HTTPClient.h>
 
 #include "WirelessFilsPilotes.h"
 
-#include "data\fw.html.gz.h"
-#include "data\status.html.gz.h"
-#include "data\pure-min.css.gz.h"
-#include "data\side-menu.css.gz.h"
-#include "data\side-menu.js.gz.h"
-#include "data\jquery-3.2.1.min.js.gz.h"
-#include "data\discover.html.gz.h"
+
+//Return JSON of AppData1 content
+String AppData1::GetJSON() {
+
+  String gc;
+
+  bool first = true;
+  for (byte i = 0; i < MODEL_WFP; i++) {
+    if (first) first = false;
+    else gc = gc + ',';
+    gc = gc + F("\"fp") + (i + 1) + F("n\":\"") + fpNames[i] + '"';
+  }
+
+  return gc;
+}
+
+//Parse HTTP Request into an AppData1 structure
+bool AppData1::SetFromParameters(AsyncWebServerRequest* request, AppData1 &tempAppData1) {
+
+  if (request->hasParam(F("fp1n"), true) && request->getParam(F("fp1n"), true)->value().length() < sizeof(fpNames[0])) strcpy(tempAppData1.fpNames[0], request->getParam(F("fp1n"), true)->value().c_str());
+  else tempAppData1.fpNames[0][0] = 0;
+  if (request->hasParam(F("fp2n"), true) && request->getParam(F("fp2n"), true)->value().length() < sizeof(fpNames[1])) strcpy(tempAppData1.fpNames[1], request->getParam(F("fp2n"), true)->value().c_str());
+  else tempAppData1.fpNames[1][0] = 0;
+  if (request->hasParam(F("fp3n"), true) && request->getParam(F("fp3n"), true)->value().length() < sizeof(fpNames[2])) strcpy(tempAppData1.fpNames[2], request->getParam(F("fp3n"), true)->value().c_str());
+  else tempAppData1.fpNames[2][0] = 0;
+  if (request->hasParam(F("fp4n"), true) && request->getParam(F("fp4n"), true)->value().length() < sizeof(fpNames[3])) strcpy(tempAppData1.fpNames[3], request->getParam(F("fp4n"), true)->value().c_str());
+  else tempAppData1.fpNames[3][0] = 0;
+  if (request->hasParam(F("fp5n"), true) && request->getParam(F("fp5n"), true)->value().length() < sizeof(fpNames[4])) strcpy(tempAppData1.fpNames[4], request->getParam(F("fp5n"), true)->value().c_str());
+  else tempAppData1.fpNames[4][0] = 0;
+  if (request->hasParam(F("fp6n"), true) && request->getParam(F("fp6n"), true)->value().length() < sizeof(fpNames[5])) strcpy(tempAppData1.fpNames[5], request->getParam(F("fp6n"), true)->value().c_str());
+  else tempAppData1.fpNames[5][0] = 0;
+  if (request->hasParam(F("fp7n"), true) && request->getParam(F("fp7n"), true)->value().length() < sizeof(fpNames[6])) strcpy(tempAppData1.fpNames[6], request->getParam(F("fp7n"), true)->value().c_str());
+  else tempAppData1.fpNames[6][0] = 0;
+  if (request->hasParam(F("fp8n"), true) && request->getParam(F("fp8n"), true)->value().length() < sizeof(fpNames[7])) strcpy(tempAppData1.fpNames[7], request->getParam(F("fp8n"), true)->value().c_str());
+  else tempAppData1.fpNames[7][0] = 0;
+
+  return true;
+}
 
 
-//Config object
-Config config;
 
-//WifiMan
-WifiMan wifiMan;
 
-//AsyncWebServer
-AsyncWebServer server(80);
-//flag to use from web update to reboot the ESP
-bool shouldReboot = false;
-
-//WebFP
-WebFP webFP;
 
 
 
 //-----------------------------------------------------------------------
-void InitSystemWebServer(AsyncWebServer &server) {
+// Timer Tick ON (Used to send Live to FP every 5 minutes)
+//-----------------------------------------------------------------------
+void WebFP::TimerTickON(byte fpNumber, byte liveOnDuration) {
 
-  //root is status
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/html"), (const uint8_t*)statushtmlgz, sizeof(statushtmlgz));
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
+  //DEBUG
+  //Serial.print("---TimerTickON--- clock : ");Serial.println(millis()/1000);
+  //Serial.print("fp : ");Serial.print(fpNumber);Serial.print(" ; duration : ");Serial.print(liveOnDuration);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
 
-  //sn url is a way to find module on network
-  char discoURL[10];
-  sprintf_P(discoURL, PSTR("/%08x"), ESP.getChipId());
-  server.on(discoURL, HTTP_GET, [discoURL](AsyncWebServerRequest * request) {
-    char chipID[9];
-    sprintf_P(chipID, PSTR("%08x"), ESP.getChipId());
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/html", chipID);
-    response->addHeader("Access-Control-Allow-Origin", "*"); //allow this URL to be requested from everywhere
-    request->send(response);
-  });
+  //if 3 or 7sec previous timer already exists then clean it
+  //if (_comfortTimer[fpNumber].getNumTimers() > 1) _comfortTimer[fpNumber].deleteTimer(1);
 
-  //ffffffff url is a way to find all modules on the network
-  server.on("/ffffffff", HTTP_GET, [](AsyncWebServerRequest * request) {
-    //answer with a JSON string containing sn, model and version
-    char discoJSON[128];
-    sprintf_P(discoJSON, PSTR("{\"sn\":\"%08x\",\"m\":\"%s\",\"v\":\"%s\"}"), ESP.getChipId(), MODEL, VERSION);
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/json", discoJSON);
-    response->addHeader("Access-Control-Allow-Origin", "*"); //allow this URL to be requested from everywhere
-    request->send(response);
-  });
-
-  //Special Discover page (not listed in default menu
-  server.on("/discover", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/html"), (const uint8_t*)discoverhtmlgz, sizeof(discoverhtmlgz));
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-
-  //GetStatus0 is returning system status
-  server.on("/gs0", HTTP_GET, [](AsyncWebServerRequest * request) {
-
-    unsigned long minutes = millis() / 60000;
-    char ssJSON[150];
-    snprintf_P(ssJSON, sizeof(ssJSON), PSTR("{\"sn\":\"%08x\",\"b\":\"%s\",\"u\":\"%dd%dh%dm\""), ESP.getChipId(), VERSION, (byte)(minutes / 1440), (byte)(minutes / 60 % 24), (byte)(minutes % 60));
-    snprintf_P(ssJSON + strlen(ssJSON), sizeof(ssJSON) - strlen(ssJSON), PSTR(",\"ap\":\"%s\",\"ai\":\"%s\""), ((WiFi.getMode()&WIFI_AP) ? "on" : "off"), ((WiFi.getMode()&WIFI_AP) ? WiFi.softAPIP().toString().c_str() : "-"));
-    snprintf_P(ssJSON + strlen(ssJSON), sizeof(ssJSON) - strlen(ssJSON), PSTR(",\"sta\":\"%s\",\"stai\":\"%s\""), (config.ssid[0] ? "on" : "off"), (config.ssid[0] ? (WiFi.isConnected() ? ((WiFi.localIP().toString() + ' ' + (config.ip ? "Static" : "DHCP")).c_str()) : "Not Connected") : "-"));
-    snprintf_P(ssJSON + strlen(ssJSON), sizeof(ssJSON) - strlen(ssJSON), PSTR(",\"f\":%d}"), ESP.getFreeHeap());
-    request->send(200, F("text/json"), ssJSON);
-  });
-
-  //FirmWare URL to get page
-  server.on("/fw", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/html"), (const uint8_t*)fwhtmlgz, sizeof(fwhtmlgz));
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-
-  //FirmWare POST URL allows to push new firmware
-  server.on("/fw", HTTP_POST, [](AsyncWebServerRequest * request) {
-    shouldReboot = !Update.hasError();
-    if (shouldReboot) {
-      AsyncWebServerResponse *response = request->beginResponse(200, F("text/html"), F("Firmware Successfully Uploaded<script>setTimeout(function(){if('referrer' in document)window.location=document.referrer;},10000);</script>"));
-      response->addHeader("Connection", "close");
-      request->send(response);
-    }
-    else {
-      AsyncWebServerResponse *response = request->beginResponse(500, F("text/html"), F("Firmware Update Error : End failed"));
-      response->addHeader("Connection", "close");
-      request->send(response);
-    }
-  }, [](AsyncWebServerRequest * request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-    if (!index) {
-      Serial.printf("Update Start: %s\n", filename.c_str());
-      //WirelessFilsPilotes
-      digitalWrite(14, HIGH); //light down red
-      digitalWrite(12, HIGH); //light down green
-      Update.runAsync(true);
-      if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-        Update.printError(Serial);
-      }
-    }
-    if (!Update.hasError()) {
-      if (Update.write(data, len) != len) {
-        Update.printError(Serial);
-      }
-    }
-    if (final) {
-      if (Update.end(true)) {
-        Serial.printf("Update Success: %uB\n", index + len);
-      } else {
-        Update.printError(Serial);
-      }
-    }
-  });
-
-  //Ressources URLs
-  server.on("/pure-min.css", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/css"), (const uint8_t*)puremincssgz, sizeof(puremincssgz));
-    response->addHeader("Content-Encoding", "gzip");
-    response->addHeader("Cache-Control", "max-age=604800, public");
-    request->send(response);
-  });
-
-  server.on("/side-menu.css", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/css"), (const uint8_t*)sidemenucssgz, sizeof(sidemenucssgz));
-    response->addHeader("Content-Encoding", "gzip");
-    response->addHeader("Cache-Control", "max-age=604800, public");
-    request->send(response);
-  });
-
-  server.on("/side-menu.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/javascript"), (const uint8_t*)sidemenujsgz, sizeof(sidemenujsgz));
-    response->addHeader("Content-Encoding", "gzip");
-    response->addHeader("Cache-Control", "max-age=604800, public");
-    request->send(response);
-  });
-
-  server.on("/jquery-3.2.1.min.js", HTTP_GET, [](AsyncWebServerRequest * request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, F("text/javascript"), (const uint8_t*)jquery321minjsgz, sizeof(jquery321minjsgz));
-    response->addHeader("Content-Encoding", "gzip");
-    response->addHeader("Cache-Control", "max-age=604800, public");
-    request->send(response);
-  });
-
-  //Special Developper pages
-#if DEVELOPPER_MODE
-  server.addHandler(new SPIFFSEditor("TODO", "TODO"));
+  //Send Full Live signal
+#if(MODEL_WFP>1)
+  //control Positive
+  delay(10);
+  _mcp23017.digitalWrite(_FPPINMAP[fpNumber * 2], LOW);
+  //control Negative
+  delay(10);
+  _mcp23017.digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], LOW);
+#else
+  digitalWrite(_FPPINMAP[fpNumber * 2], LOW);
+  digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], LOW);
 #endif
 
-  //404 on not found
-  server.onNotFound([](AsyncWebServerRequest * request) {
-    request->send(404);
+  //then create Timer for Stop
+  _comfortTimer[fpNumber].setTimeout(((long)liveOnDuration) * 1000, [this, fpNumber]() {
+    this->TimerTickOFF(fpNumber);
   });
 }
 
 //-----------------------------------------------------------------------
-// Setup function
+// Timer Tick OFF (Used to stop Live to FP after 3 or 7 sec)
 //-----------------------------------------------------------------------
-void setup(void) {
+void WebFP::TimerTickOFF(byte fpNumber) {
 
-  Serial.begin(SERIAL_SPEED);
-  Serial.println();
-  delay(200);
+  //DEBUG
+  //Serial.print("---TimerTickOFF--- clock : ");Serial.println(millis()/1000);
+  //Serial.print("fp : ");Serial.println(fpNumber);
 
-  //WirelessFilsPilotes LED
-  //red GPIO14
-  //green GPIO12
-  pinMode(14, OUTPUT);
-  digitalWrite(14, LOW); //light up red
-  pinMode(12, OUTPUT);
-  digitalWrite(12, HIGH); //light down green
+  //Stop Full Live signal
+#if(MODEL_WFP>1)
+  //control Positive
+  delay(10);
+  _mcp23017.digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+  //control Negative
+  delay(10);
+  _mcp23017.digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#else
+  digitalWrite(_FPPINMAP[fpNumber * 2], LOW);
+  digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], LOW);
+#endif
+}
 
-  Serial.print(F("DomoChip WirelessFilsPilotes ")); Serial.println(VERSION);
-  Serial.println(F("---Booting---"));
-  Serial.println(F("Wait Rescue button for 5 seconds"));
+//-----------------------------------------------------------------------
+// Private function that change FP state (fpNumber is zero based)
+//-----------------------------------------------------------------------
+void WebFP::setFP(byte fpNumber, byte stateNumber, bool force) {
 
-  bool skipExistingConfig = false;
-  pinMode(RESCUE_BTN_PIN, (RESCUE_BTN_PIN != 16) ? INPUT_PULLUP : INPUT);
-  for (int i = 0; i < 100 && skipExistingConfig == false; i++) {
-    if (digitalRead(RESCUE_BTN_PIN) == LOW) {
-      skipExistingConfig = true;
-      digitalWrite(14, HIGH); //light down red
+  //DEBUG
+  //Serial.print("---setFP--- clock : ");Serial.println(millis()/1000);
+  //Serial.print("fp : ");Serial.print(fpNumber);Serial.print(" ; state : ");Serial.print(stateNumber);Serial.print(" ; force : ");Serial.print(force);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
+
+
+  //if fpNumber is over (like from init) then drop
+  if (fpNumber >= MODEL_WFP) return;
+
+  //if stateNumber are different (otherwise do nothing and answer OK)
+  if ((_fpStates[fpNumber] != stateNumber) || force) {
+
+    //if stateNumbers are in different ranges (otherwise won't touch stuff and go direct to remember new stateNumber)
+    if ((_fpStates[fpNumber] <= 10 && stateNumber > 10) ||
+        (_fpStates[fpNumber] > 10 && _fpStates[fpNumber] <= 20 && (stateNumber <= 10 || stateNumber > 20)) ||
+        (_fpStates[fpNumber] > 20 && _fpStates[fpNumber] <= 30 && (stateNumber <= 20 || stateNumber > 30)) ||
+        (_fpStates[fpNumber] > 30 && _fpStates[fpNumber] <= 40 && (stateNumber <= 30 || stateNumber > 40)) ||
+        (_fpStates[fpNumber] > 40 && _fpStates[fpNumber] <= 50 && (stateNumber <= 40 || stateNumber > 50)) ||
+        (_fpStates[fpNumber] > 50 && stateNumber <= 50) ||
+        force) {
+
+      //clean up comfortTimer of current FP (Will be recreated if necessary)
+      if (_comfortTimer[fpNumber].getNumTimers() > 1) _comfortTimer[fpNumber].deleteTimer(1);
+      if (_comfortTimer[fpNumber].getNumTimers() > 0) _comfortTimer[fpNumber].deleteTimer(0);
+
+      //Then apply it
+      if (stateNumber <= 10) { //Arrêt (positive only)
+#if(MODEL_WFP>1)
+        //control Positive
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[fpNumber * 2], LOW);
+        //control Negative
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#else
+        digitalWrite(_FPPINMAP[fpNumber * 2], LOW);
+        digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#endif
+      }
+      else if (stateNumber <= 20) { //Hors Gel (Negative only)
+#if(MODEL_WFP>1)
+        //control Positive
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+        //control Negative
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], LOW);
+#else
+        digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+        digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], LOW);
+#endif
+      }
+      else if (stateNumber <= 30) { //Eco (Full)
+#if(MODEL_WFP>1)
+        //control Positive
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[fpNumber * 2], LOW);
+        //control Negative
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], LOW);
+#else
+        digitalWrite(_FPPINMAP[fpNumber * 2], LOW);
+        digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], LOW);
+#endif
+      }
+      else if (stateNumber <= 40) { //Confort-2 (Full Live during 7s Every 5min)
+#if(MODEL_WFP>1)
+        //Switch OFF
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#else
+        digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+        digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#endif
+
+        //Setup Timer system
+        _comfortTimer[fpNumber].setInterval(300000L, [this,  fpNumber]() {
+          //_comfortTimer[fpNumber].setInterval(30000L, [this,  fpNumber]() { //DEBUG
+          this->TimerTickON(fpNumber, 7);
+        });
+      }
+      else if (stateNumber <= 50) { //Confort-1 (Full Live during 3s Every 5min)
+
+#if(MODEL_WFP>1)
+        //Switch OFF
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#else
+        digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+        digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#endif
+
+        //Setup Timer system
+        _comfortTimer[fpNumber].setInterval(300000L, [this,  fpNumber]() {
+          //_comfortTimer[fpNumber].setInterval(30000L, [this,  fpNumber]() { //DEBUG
+          this->TimerTickON(fpNumber, 3);
+        });
+      }
+      else { //Confort (OFF/Nothing)
+#if(MODEL_WFP>1)
+        //control Positive
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+        //control Negative
+        delay(10);
+        _mcp23017.digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#else
+        digitalWrite(_FPPINMAP[fpNumber * 2], HIGH);
+        digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
+#endif
+      }
     }
-    delay(50);
+
+    //Remember state passed
+    _fpStates[fpNumber] = stateNumber;
+
+    //save new value in SPIFFS file
+    //force is used while init and so data is coming from file and so don't need to write it back to file
+    if (!force) {
+
+      File FPStateFile = SPIFFS.open("/FPState.bin", "w");
+      if (FPStateFile) {
+
+        //write variable into file
+        int nbWritten = FPStateFile.write(_fpStates, 8);
+        //close file
+        FPStateFile.close();
+
+        if (nbWritten != 8) SPIFFS.remove("/FPState.bin");
+      }
+    }
+  }
+}
+
+
+//------------------------------------------
+//return WebFP Status in JSON
+String WebFP::GetStatus() {
+
+  String statusJSON('{');
+  for (byte i = 0; i < MODEL_WFP; i++) {
+    statusJSON = statusJSON + (i ? "," : "") + F("\"FP") + (i + 1) + F("\":") + _fpStates[i];
+  }
+  statusJSON += '}';
+
+  return statusJSON;
+}
+
+
+//------------------------------------------
+//Function to initiate WebFP with Config
+void WebFP::Init(AppData1 &appData1) {
+
+  Serial.print(F("Start WebFP"));
+
+  _appData1 = &appData1;
+
+
+#if(MODEL_WFP>1)
+  //init I2C and MCP23017
+  _mcp23017.begin();
+  delay(10);
+
+  //Set port as output
+  for (byte i = 0; i < 16; i++) {
+    _mcp23017.pinMode(i, OUTPUT);
+    delay(10);
   }
 
-  Serial.print(F("Start Config"));
+  _mcp23017.writeGPIOAB(0);
 
-  //initialize config with default values
-  config.SetDefaultValues();
+#else
+  //init pin to output
+  pinMode(_FPPINMAP[0], OUTPUT);
+  digitalWrite(_FPPINMAP[0], HIGH);
+  pinMode(_FPPINMAP[1], OUTPUT);
+  digitalWrite(_FPPINMAP[1], HIGH);
+#endif
 
-  //if skipExistingConfig is false then load the existing config
-  if (!skipExistingConfig) {
-    if (!config.Load()) Serial.println(F(" : Failed to load config!!!---------"));
-    else Serial.println(F(" : OK"));
+  //init SPIFFS
+  if (!SPIFFS.begin()) {
+    SPIFFS.format();
+    SPIFFS.begin();
   }
-  else Serial.println(F(" : OK (Config Skipped)"));
+  if (SPIFFS.exists("/FPState.bin")) {
+    File FPStateFile = SPIFFS.open("/FPState.bin", "r");
+    if (FPStateFile && (FPStateFile.size() == 8)) {
 
-  Serial.print(F("Start WiFi : "));
-  if (config.ip) wifiMan.ConfigStaticIP(config.ip, config.gw, config.mask, config.dns1, config.dns2);
-  if (wifiMan.Init(config.ssid, config.password, config.hostname, DEFAULT_AP_SSID, DEFAULT_AP_PSK)) Serial.println(F("OK"));
-  else Serial.println(F("FAILED"));
+      //load file content in variable
+      FPStateFile.readBytes((char*)_fpStates, 8);
 
-  Serial.print(F("Start Fils Pilotes"));
+      //close file
+      FPStateFile.close();
 
-  webFP.Init();
+      //set FP state
+      for (byte i = 0; i < 8; i++) {
+        setFP(i, _fpStates[i], true);
+        delay(200);
+      }
+    }
+  }
 
-  Serial.print(F(" : OK\r\nStart WebServer"));
-  InitSystemWebServer(server);
-  config.InitWebServer(server, shouldReboot);
-  webFP.InitWebServer(server);
-  server.begin();
+  _initialized = true;
+
   Serial.println(F(" : OK"));
-
-  Serial.println(F("---End of setup()---"));
 }
 
-//-----------------------------------------------------------------------
-// Main Loop function
-//-----------------------------------------------------------------------
-void loop(void) {
+//------------------------------------------
+void WebFP::InitWebServer(AsyncWebServer &server) {
 
-  //need to run WebFP for Timers
-  webFP.Run();
+  server.on("/gs1", HTTP_GET, [this](AsyncWebServerRequest * request) {
+    request->send(200, F("text/json"), GetStatus());
+  });
 
-  wifiMan.Run();
 
-  if (shouldReboot) {
-    Serial.println("Rebooting...");
-    delay(100);
-    ESP.restart();
-  }
-  yield();
+  server.on("/setFP", HTTP_GET, [this](AsyncWebServerRequest * request) {
+
+    byte fpPassed = 0;
+    byte fpValues[8];
+
+
+    char paramName[4] = {'F', 'P', '1', 0};
+    //for each FP
+    for (byte i = 0; i < MODEL_WFP; i++) {
+
+      //build paramName
+      paramName[2] = '1' + i;
+
+      //check FP param is there
+      if (request->hasParam(paramName)) {
+
+        //convert fpValue
+        int fpValue = request->getParam(paramName)->value().toInt();
+
+        //check value is correct
+        if ((fpValue != 0 || request->getParam(paramName)->value() == "0") && fpValue < 100) {
+
+          //put it in table
+          fpPassed += (1 << i);
+          fpValues[i] = fpValue;
+        }
+      }
+    }
+
+    //if no fp order passed
+    if (!fpPassed) {
+      //answer with error and return
+      request->send(400, F("text/html"), F("No valid order received"));
+      return;
+    }
+
+    //for each FP
+    for (byte i = 0; i < MODEL_WFP; i++) {
+      //fp has been passed then apply
+      if (fpPassed & (1 << i)) setFP(i, fpValues[i]);
+    }
+
+    request->send(200);
+  });
 }
 
+//------------------------------------------
+//Run for timer
+void WebFP::Run() {
+
+  for (byte i = 0; i < MODEL_WFP; i++) _comfortTimer[i].run();
+}

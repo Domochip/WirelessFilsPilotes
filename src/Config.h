@@ -1,21 +1,15 @@
 #ifndef Config_h
 #define Config_h
 
-
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
-#include "data\config.html.gz.h"
-
-#include "WirelessFilsPilotes.h"
-
-#define DEFAULT_AP_SSID "WirelessFilsPilotes"
-#define DEFAULT_AP_PSK "PasswordFP"
+#include "..\Main.h"
 
 const char predefPassword[] PROGMEM = "ewcXoCt4HHjZUvY0";
 
-class Config {
+class SystemData {
   public:
     char ssid[32 + 1] = {0};
     char password[64 + 1] = {0};
@@ -26,9 +20,6 @@ class Config {
     uint32_t dns1 = 0;
     uint32_t dns2 = 0;
 
-    //FP Names/Aliases
-    char fpNames[8][25];
-
     void SetDefaultValues() {
       ssid[0] = 0;
       password[0] = 0;
@@ -38,20 +29,23 @@ class Config {
       mask = 0;
       dns1 = 0;
       dns2 = 0;
-
-      fpNames[0][0] = 0;
-      fpNames[1][0] = 0;
-      fpNames[2][0] = 0;
-      fpNames[3][0] = 0;
-      fpNames[4][0] = 0;
-      fpNames[5][0] = 0;
-      fpNames[6][0] = 0;
-      fpNames[7][0] = 0;
     }
 
-    static byte AsciiToHex(char c); //Utils
-    static bool FingerPrintS2A(byte* fingerPrintArray, const char* fingerPrintToDecode);
-    static char* FingerPrintA2S(char* fpBuffer, byte* fingerPrintArray, char separator = 0);
+    String GetJSON();
+
+    bool SetFromParameters(AsyncWebServerRequest* request, SystemData &tempSystemData);
+};
+
+class Config {
+  public:
+
+    SystemData systemData;
+    AppData1 appData1;
+
+    void SetDefaultValues() {
+      systemData.SetDefaultValues();
+      appData1.SetDefaultValues();
+    }
 
     bool Save();
     bool Load();
@@ -61,7 +55,6 @@ class Config {
     bool SetFromParameters(AsyncWebServerRequest* request);
     uint16_t crc; ///!\ crc should always stay in last position
 };
-
 
 #endif
 
