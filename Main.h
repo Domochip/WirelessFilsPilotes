@@ -1,6 +1,8 @@
 #ifndef Main_h
 #define Main_h
 
+#include <arduino.h>
+
 #include "data\status.html.gz.h"
 #include "data\config.html.gz.h"
 #include "data\fw.html.gz.h"
@@ -28,22 +30,21 @@
 //include Application header file
 #include "WirelessFilsPilotes.h"
 
-#define APPLICATION_NAME "DomoChip Wireless FilsPilotes"
-#define APPLICATION_CLASS WebFP
-#define APPLICATION_VAR webFP
-
-#define VERSION_NUMBER "3.2.2"
-
 //model is 1, 4 or 8
 #define MODEL_WFP 1
 
 #if MODEL_WFP==1
-#define MODEL "WFP1"
+#define APPLICATION1_NAME "WFP1"
 #else
-#define MODEL "WFP4/8"
+#define APPLICATION1_NAME "WFP4/8"
 #endif
 
-#define DEFAULT_AP_SSID "WirelessFilsPilotes"
+#define APPLICATION1_DESC "DomoChip Wireless FilsPilotes"
+#define APPLICATION1_CLASS WebFP
+
+#define VERSION_NUMBER "3.2.2"
+
+#define DEFAULT_AP_SSID "WirelessFP"
 #define DEFAULT_AP_PSK "PasswordFP"
 
 //Enable developper mode (fwdev webpage and SPIFFS is used)
