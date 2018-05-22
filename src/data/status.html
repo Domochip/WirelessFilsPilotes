@@ -3,8 +3,8 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="$ShortApplicationName$">
-        <title>Domochip $ApplicationName$</title>
+        <meta name="description" content="WFP1/4/8">
+        <title>Domochip WirelessFilsPilotes</title>
         
         <link rel="stylesheet" href="pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
         <link rel="stylesheet" href="side-menu.css">
@@ -21,7 +21,7 @@
             <div id="menu">
                 <div class="pure-menu">
                     <div class="pure-menu-heading">Domochip</div>
-                    <div class="pure-menu-heading">$ShortApplicationName$</div>
+                    <div class="pure-menu-heading">WFP1/4/8</div>
 
                     <ul class="pure-menu-list">
                         <li class="pure-menu-item pure-menu-selected"><a href="./" class="pure-menu-link">Status</a></li>
@@ -49,7 +49,8 @@
                     AP : <span id="ap"></span> (<span id="ai"></span>)<br>
                     Station : <span id="sta"></span> (<span id="stai"></span>)<br>
 
-                    $HTMLContent$
+                            <h2 class="content-subhead">Fils Pilotes<span id="l3"><h6 style="display:inline"><b> Loading...</b></h6></span></h2>
+        <span id="FPList"></span>
                     
                 </div>
             </div>
@@ -96,7 +97,55 @@
                     $("#l2").html('<h4 style="display:inline;color:red;"><b> Failed</b></h4>');
                 });
 
-                $HTMLScriptInReady$
+                        function generateFPButtons(fpNumber,currentValue){
+            var ret='<div class="pure-button-group" role="group">';
+            ret+='<style scoped>.pure-button-active{background: rgb(31, 141, 214);}</style>';
+            ret+='<button id="FP'+fpNumber+'v51" class="pure-button'+(currentValue>50?' pure-button-active':'')+'">Confort</button>';
+            ret+='<button id="FP'+fpNumber+'v41" class="pure-button'+(currentValue>40&&currentValue<51?' pure-button-active':'')+'">Confort-1</button>';
+            ret+='<button id="FP'+fpNumber+'v31" class="pure-button'+(currentValue>30&&currentValue<41?' pure-button-active':'')+'">Confort-2</button>';
+            ret+='<button id="FP'+fpNumber+'v21" class="pure-button'+(currentValue>20&&currentValue<31?' pure-button-active':'')+'">Eco</button>';
+            ret+='<button id="FP'+fpNumber+'v11" class="pure-button'+(currentValue>10&&currentValue<21?' pure-button-active':'')+'">Hors Gel</button>';
+            ret+='<button id="FP'+fpNumber+'v1" class="pure-button'+(currentValue<11?' pure-button-active':'')+'">Arrêt</button>';
+            ret+='</div>';
+
+            return ret;
+        }
+
+        function showCurrentFP(fpNumber,newValue){
+            if(newValue<51) $("#FP"+fpNumber+"v51").removeClass("pure-button-active"); else $("#FP"+fpNumber+"v51").addClass("pure-button-active");
+            if(newValue<41 || newValue>50) $("#FP"+fpNumber+"v41").removeClass("pure-button-active"); else $("#FP"+fpNumber+"v41").addClass("pure-button-active");
+            if(newValue<31 || newValue>40) $("#FP"+fpNumber+"v31").removeClass("pure-button-active"); else $("#FP"+fpNumber+"v31").addClass("pure-button-active");
+            if(newValue<21 || newValue>30) $("#FP"+fpNumber+"v21").removeClass("pure-button-active"); else $("#FP"+fpNumber+"v21").addClass("pure-button-active");
+            if(newValue<11 || newValue>20) $("#FP"+fpNumber+"v11").removeClass("pure-button-active"); else $("#FP"+fpNumber+"v11").addClass("pure-button-active");
+            if(newValue>10) $("#FP"+fpNumber+"v1").removeClass("pure-button-active"); else $("#FP"+fpNumber+"v1").addClass("pure-button-active");
+        }
+
+        function assignButtonsActions(fpNumber){
+
+            $("#FP"+fpNumber+"v51").click(function(){$.get("/setFP?FP"+fpNumber+"=51",function(){showCurrentFP(fpNumber,51);})});
+            $("#FP"+fpNumber+"v41").click(function(){$.get("/setFP?FP"+fpNumber+"=41",function(){showCurrentFP(fpNumber,41);})});
+            $("#FP"+fpNumber+"v31").click(function(){$.get("/setFP?FP"+fpNumber+"=31",function(){showCurrentFP(fpNumber,31);})});
+            $("#FP"+fpNumber+"v21").click(function(){$.get("/setFP?FP"+fpNumber+"=21",function(){showCurrentFP(fpNumber,21);})});
+            $("#FP"+fpNumber+"v11").click(function(){$.get("/setFP?FP"+fpNumber+"=11",function(){showCurrentFP(fpNumber,11);})});
+            $("#FP"+fpNumber+"v1").click(function(){$.get("/setFP?FP"+fpNumber+"=1",function(){showCurrentFP(fpNumber,1);})});
+        }
+
+        $.getJSON("/gs1", function(GS1){
+
+            $.each(GS1,function(k,v){
+                $('#FPList').append('FP'+k[2]+' : <b><span id="fp'+k[2]+'n"></span></b>'+ generateFPButtons(k[2],v) +'<br>');
+                assignButtonsActions(k[2]);
+            })
+            $.getJSON("/gc1",function(GC1){
+                $.each(GC1,function(k,v){
+                    if(k.match(/fp[0-9]n/)) $('#'+k).text(v);
+                })
+            });
+            $("#l3").fadeOut();
+        })
+        .fail(function(){
+            $("#l3").html('<h4 style="display:inline;color:red;"><b> Failed</b></h4>');
+        });
             });
         </script>
         <script src="side-menu.js"></script>

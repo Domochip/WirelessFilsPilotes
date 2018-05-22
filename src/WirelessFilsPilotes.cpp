@@ -324,7 +324,8 @@ bool WebFP::AppInit(bool reInit)
       delay(200);
     }
   }
-  else return false;
+  else
+    return false;
 
   return true;
 };
