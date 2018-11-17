@@ -3,11 +3,6 @@
 
 #include <arduino.h>
 
-#include "data\status.html.gz.h"
-#include "data\config.html.gz.h"
-#include "data\fw.html.gz.h"
-#include "data\discover.html.gz.h"
-
 //DomoChip Informations
 //------------Compile for 1M 64K SPIFFS------------
 //Configuration Web Pages :
@@ -38,11 +33,16 @@
 #else
 #define APPLICATION1_NAME "WFP4/8"
 #endif
-
 #define APPLICATION1_DESC "DomoChip Wireless FilsPilotes"
 #define APPLICATION1_CLASS WebFP
 
-#define VERSION_NUMBER "3.2.2"
+#if MODEL_WFP==1
+#define APPLICATION2_NAME "WDS18B20"
+#define APPLICATION2_DESC "DomoChip Wireless DS18B20"
+#define APPLICATION2_CLASS WebDS18B20Buses
+#endif
+
+#define VERSION_NUMBER "3.2.4"
 
 #define DEFAULT_AP_SSID "WirelessFP"
 #define DEFAULT_AP_PSK "PasswordFP"
