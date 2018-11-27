@@ -28,7 +28,7 @@
 //model is 1, 4 or 8
 #define MODEL_WFP 1
 
-#if MODEL_WFP==1
+#if MODEL_WFP == 1
 #define APPLICATION1_NAME "WFP1"
 #else
 #define APPLICATION1_NAME "WFP4/8"
@@ -36,7 +36,7 @@
 #define APPLICATION1_DESC "DomoChip Wireless FilsPilotes"
 #define APPLICATION1_CLASS WebFP
 
-#if MODEL_WFP==1
+#if MODEL_WFP == 1
 #define APPLICATION2_NAME "WDS18B20"
 #define APPLICATION2_DESC "DomoChip Wireless DS18B20"
 #define APPLICATION2_CLASS WebDS18B20Buses
@@ -53,8 +53,10 @@
 //Choose Serial Speed
 #define SERIAL_SPEED 115200
 
+#if MODEL_WFP > 1
 //Choose Pin used to boot in Rescue Mode
 #define RESCUE_BTN_PIN 16
+#endif
 
 //Status LED
 //red GPIO14 (LOW level light UP)
