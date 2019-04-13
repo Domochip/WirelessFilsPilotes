@@ -8,11 +8,11 @@
 #include "data\fw0.html.gz.h"
 #include "data\discover0.html.gz.h"
 
-class CoreApplication : public Application
+class Core : public Application
 {
 private:
   void SetConfigDefaultValues();
-  void ParseConfigJSON(JsonObject &root);
+  void ParseConfigJSON(DynamicJsonDocument &doc);
   bool ParseConfigWebRequest(AsyncWebServerRequest *request);
   String GenerateConfigJSON(bool clearPassword);
   String GenerateStatusJSON();
@@ -23,7 +23,7 @@ private:
   void AppRun(){};
 
 public:
-  CoreApplication(char appId, String fileName) : Application(appId, fileName) {}
+  Core(char appId, String fileName) : Application(appId, fileName) {}
 };
 
 #endif

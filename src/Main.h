@@ -4,7 +4,6 @@
 #include <arduino.h>
 
 //DomoChip Informations
-//------------Compile for 1M 64K SPIFFS------------
 //Configuration Web Pages :
 //http://IP/
 //http://IP/config
@@ -24,6 +23,7 @@
 
 //include Application header file
 #include "WirelessFilsPilotes.h"
+#include "WebDS18B20Bus.h"
 
 //model is 1, 4 or 8
 #define MODEL_WFP 1
@@ -39,10 +39,10 @@
 #if MODEL_WFP == 1
 #define APPLICATION2_NAME "WDS18B20"
 #define APPLICATION2_DESC "DomoChip Wireless DS18B20"
-#define APPLICATION2_CLASS WebDS18B20Buses
+#define APPLICATION2_CLASS WebDS18B20Bus
 #endif
 
-#define VERSION_NUMBER "3.2.4"
+#define VERSION_NUMBER "3.3.0"
 
 #define DEFAULT_AP_SSID "WirelessFP"
 #define DEFAULT_AP_PSK "PasswordFP"

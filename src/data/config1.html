@@ -1,51 +1,199 @@
-<div id="applicationName" style="display: none;">WirelessFilsPilotes</div>
-<div id="shortApplicationName" style="display: none;">WFP1/4/8</div>
-
-<h2 class="content-subhead">Fils Pilotes<span id="l1"><h6 style="display:inline"><b> Loading...</b></h6></span></h2>
-<form class="pure-form pure-form-aligned" id='f1'>
+<h2 class="content-subhead">Fils Pilotes<span id="l"><h6 style="display:inline"><b> Loading...</b></h6></span></h2>
+<form class="pure-form pure-form-aligned" id='f'>
     <fieldset>
 
-<div id='fpnl'></div>
+        <h3 class="content-subhead">Naming</h3>
+        <div id='fpnl'></div>
+
+        <h3 class="content-subhead">Home Automation  <span id="hai" name="hai" class="infotip">?</span></h3>
+        <div class="infotipdiv"  id="haidiv" name="haidiv" style="display:none;">
+            HTTP GET request can be send to this device : <br>
+            <b>http://$ip$/getFP</b> : Get list of Fil Pilote and current order (JSON)<br>
+            <b>http://$ip$/setFP?FP1=51</b> : Set Fil Pilote 1 (FP1) in Comfort mode (51)<br>
+        </div>
+
+
+        <div class="pure-control-group">
+            <label for="haproto">Type</label>
+            <select id='haproto' name='haproto'>
+                <option value="0">Disabled</option>
+                <option value="1">MQTT</option>
+            </select>
+        </div>
+
+
+        <div id='hae' style='display:none'>
+
+            <div class="pure-control-group">
+                <label for="hatls">SSL/TLS</label>
+                <input type='checkbox' id='hatls' name='hatls'>
+            </div>
+            <div class="pure-control-group">
+                <label for="hahost">Hostname</label>
+                <input type='text' id='hahost' name='hahost' maxlength='64' pattern='[A-Za-z0-9-.]+' size='50' placeholder="IP or DNS Name">
+                <span class="pure-form-message-inline">(Hostname should match with certificate name if SSL/TLS is enabled)</span>
+            </div>
+    
+            <div id='hame'>
+    
+                <div class="pure-control-group">
+                    <label for="hamtype">Type</label>
+                    <select id='hamtype' name='hamtype'>
+                        <option value="0">Generic (Separated topic)</option>
+                        <option value="1">Generic (Same level Topic)</option>
+                    </select>
+                    <span id="hamtype0i" name="hamtype0i" class="infotip">?</span>
+                    <span id="hamtype1i" name="hamtype1i" class="infotip" style="display:none;">?</span>
+                </div>
+                <div class="pure-control-group" id="hamtype0div" name="hamtype0div" style="display:none;">
+                    <label></label>
+                    <div class="infotipdiv">
+                        Published topics : <br>
+                        <b>/$fpNumber$/order</b> : current order of the Fil Pilote<br>
+                        Subscribed topics : <br>
+                        <b>/$fpNumber$/command</b> : change to order of a Fil Pilote<br>
+                    </div>
+                </div>
+                <div class="pure-control-group" id="hamtype1div" name="hamtype1div" style="display:none;">
+                    <label></label>
+                    <div class="infotipdiv">
+                        Published topics : <br>
+                        <b>/order$fpNumber$</b> : current order of the Fil Pilote<br>
+                        Subscribed topics : <br>
+                        <b>/command$fpNumber$</b> : change to order of a Fil Pilote<br>
+                    </div>
+                </div>
+
+                <div class="pure-control-group">
+                    <label for="hamport">Port</label>
+                    <input type='number' id='hamport' name='hamport' min='1' max='65535'>
+                </div>
+                <div class="pure-control-group">
+                    <label for="hamu">Username</label>
+                    <input type='text' id='hamu' name='hamu' maxlength='64' placeholder="optional">
+                </div>
+                <div class="pure-control-group">
+                    <label for="hamp">Password</label>
+                    <input type='password' id='hamp' name='hamp' maxlength='64' placeholder="optional">
+                </div>
+    
+                <div id='hamgbte'>
+                    <div class="pure-control-group">
+                        <label for="hamgbt">Base Topic</label>
+                        <input type='text' id='hamgbt' name='hamgbt' maxlength='64'>
+                        <span id="hamgbti" name="hamgbti" class="infotip">?</span>
+                    </div>
+    
+                    <div class="pure-control-group" id="hamgbtidiv" name="hamgbtidiv" style="display:none;">
+                        <label></label>
+                        <div class="infotipdiv">
+                            Base Topic placeholders : <br>
+                            <b>$sn$</b> : Serial Number of this device<br>
+                            <b>$mac$</b> : WiFi MAC address of this device<br>
+                            <b>$model$</b> : Model of this device<br>
+                            Ex : DomoChip/<b>$sn$</b> or <b>$model$</b>/<b>$mac$</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="pure-controls">
             <input type='submit' value='Save' class="pure-button pure-button-primary" disabled>
         </div>
     </fieldset>
 </form>
-<span id='r1'></span>
+<span id='r'></span>
 
 <script>
-    $("#f1").submit(function(event){
-        $("#r1").html("Saving Configuration...");
-        $.post("/sc1",$("#f1").serialize(),function(){ 
-            $("#f1").hide();
-            var reload5sec=document.createElement('script');
-            reload5sec.text='var count=4;var cdi=setInterval(function(){$("#cd").text(count);if(!count){clearInterval(cdi);location.reload();}count--;},1000);';
-            $('#r1').html('<h3><b>Configuration saved <span style="color: green;">successfully</span>. System is restarting now.</b></h3>This page will be reloaded in <span id="cd">5</span>sec.').append(reload5sec);
-        }).fail(function(){
-            $('#r1').html('<h3><b>Configuration <span style="color: red;">error</span>.</b></h3>');
-        });
+    //QuerySelector Prefix is added by load function to know into what element queySelector need to look for
+    //var qsp = '#contentX ';
+
+
+    $(qsp+"#hai").addEventListener('click',function(){
+        $(qsp+"#haidiv").style.display=($(qsp+"#haidiv").style.display==''?'none':'');
+    });
+
+    $(qsp+"#haproto").addEventListener('change',function(){
+        switch($(qsp+"#haproto").value){
+            case "0":
+                $(qsp+"#hae").style.display='none';
+                break;
+            case "1":
+                $(qsp+"#hae").style.display='';
+                $(qsp+"#hame").style.display='';
+                break;
+        }
+    });
+
+    $(qsp+"#hamtype").addEventListener('change',function(){
+        switch($(qsp+"#hamtype").value){
+            case "0":
+                $(qsp+"#hamgbte").style.display='';
+                $(qsp+"#hamtype0i").style.display='';
+                $(qsp+"#hamtype1i").style.display='none';
+                $(qsp+"#hamtype1div").style.display='none';
+                break;
+            case "1":
+                $(qsp+"#hamgbte").style.display='';
+                $(qsp+"#hamtype0i").style.display='none';
+                $(qsp+"#hamtype0div").style.display='none';
+                $(qsp+"#hamtype1i").style.display='';
+                break;
+        }
+    });
+    $(qsp+"#hamtype0i").addEventListener('click',function(){
+        $(qsp+"#hamtype0div").style.display=($(qsp+"#hamtype0div").style.display==''?'none':'');
+    });
+    $(qsp+"#hamtype1i").addEventListener('click',function(){
+        $(qsp+"#hamtype1div").style.display=($(qsp+"#hamtype1div").style.display==''?'none':'');
+    });
+    $(qsp+"#hamgbti").addEventListener('click',function(){
+        $(qsp+"#hamgbtidiv").style.display=($(qsp+"#hamgbtidiv").style.display==''?'none':'');
+    });
+
+    $(qsp+"#hatls").addEventListener('change',function(){
+        if($(qsp+"#hatls").checked){
+            $(qsp+"#hamport").value=8883;
+        }
+        else{
+            $(qsp+"#hamport").value=1883;
+        }
+    });
+
+    $(qsp+"#f").addEventListener('submit',function(event){
+        $(qsp+"#r").innerHTML="Saving Configuration...";
+        post("/sc"+qsp[8],
+            new FormData($(qsp+"#f")),
+            function(){ 
+                $(qsp+"#f").style.display='none';
+
+                $(qsp+'#r').innerHTML='<h3><b>Configuration saved <span style="color: green;">successfully</span>.</b></h3>This page will be reloaded in <span id="cd">5</span>sec.';
+                runScript('var count=4;var cdi=setInterval(function(){$("#cd").innerText=count;if(!count){clearInterval(cdi);location.reload();}count--;},1000);');
+            },
+            function(){
+                $(qsp+'#r').innerHTML='<h3><b>Configuration <span style="color: red;">error</span>.</b></h3>';
+            }
+        );
         event.preventDefault();
     });
 
-    $("#fpnl").innerHTML='';
-    $.getJSON("/gc1", function(GC1){
-        $.each(GC1,function(k,v){
+    getJSON("/gc"+qsp[8], function(GC){
+        for(k in GC){
             if(k.match(/fp[0-9]n/)){
                 var i=k[2];
-                $("#fpnl").append('<div class="pure-control-group"><label for="fp'+i+'n">FP'+i+' Name</label><input id="fp'+i+'n" name="fp'+i+'n" type="text"></div>');
+                $(qsp+"#fpnl").innerHTML+='<div class="pure-control-group"><label for="fp'+i+'n">FP'+i+' Name</label><input id="fp'+i+'n" name="fp'+i+'n" type="text"></div>';
 
-                if($('#'+k).prop('type')!='checkbox') $('#'+k).val(v);
-                else $('#'+k).prop("checked",v);
+                if($(qsp+'#'+k).type!='checkbox') $(qsp+'#'+k).value=GC[k];
+                else $(qsp+'#'+k).checked=GC[k];
 
-                $('#'+k).trigger("change");
+                triggerEvent($(qsp+'#'+k),'change');
             }
-        })
+        }
 
-        $("input[type=submit]",$("#f1")).prop("disabled",false);
-        $("#l1").fadeOut();
-    })
-    .fail(function(){
-        $("#l1").html('<h6 style="display:inline;color:red;"><b> Failed</b></h6>');
+        $(qsp+"#f input[type=submit]").disabled=false;
+        fadeOut($(qsp+"#l"));
+    },function(){
+        $(qsp+"#l").innerHTML='<h6 style="display:inline;color:red;"><b> Failed</b></h6>';
     });
 </script>
