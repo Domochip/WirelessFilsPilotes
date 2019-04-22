@@ -48,16 +48,14 @@ private:
   typedef struct
   {
     byte protocol = HA_PROTO_DISABLED;
-    bool tls = false;
     char hostname[64 + 1] = {0};
     MQTT mqtt;
   } HomeAutomation;
 
   HomeAutomation _ha;
   int _haSendResult = 0;
+  WiFiClient _wifiClient;
 
-  WiFiClient _wifiMqttClient;
-  WiFiClientSecure _wifiMqttClientSecure;
   PubSubClient _mqttClient;
   bool _needMqttReconnect = false;
   Ticker _mqttReconnectTicker;

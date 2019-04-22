@@ -376,7 +376,6 @@ void WebFP::SetConfigDefaultValues()
   _fpNames[7][0] = 0;
 
   _ha.protocol = HA_PROTO_DISABLED;
-  _ha.tls = false;
   _ha.hostname[0] = 0;
 
   _ha.mqtt.type = HA_MQTT_GENERIC_1;
@@ -400,8 +399,6 @@ void WebFP::ParseConfigJSON(DynamicJsonDocument &doc)
   //Parse Home Automation config
   if (!doc[F("haproto")].isNull())
     _ha.protocol = doc[F("haproto")];
-  if (!doc[F("hatls")].isNull())
-    _ha.tls = doc[F("hatls")];
   if (!doc[F("hahost")].isNull())
     strlcpy(_ha.hostname, doc["hahost"], sizeof(_ha.hostname));
 
@@ -437,10 +434,6 @@ bool WebFP::ParseConfigWebRequest(AsyncWebServerRequest *request)
   //if an home Automation protocol has been selected then get common param
   if (_ha.protocol != HA_PROTO_DISABLED)
   {
-    if (request->hasParam(F("hatls"), true))
-      _ha.tls = (request->getParam(F("hatls"), true)->value() == F("on"));
-    else
-      _ha.tls = false;
     if (request->hasParam(F("hahost"), true) && request->getParam(F("hahost"), true)->value().length() < sizeof(_ha.hostname))
       strcpy(_ha.hostname, request->getParam(F("hahost"), true)->value().c_str());
   }
@@ -491,7 +484,6 @@ String WebFP::GenerateConfigJSON(bool forSaveFile = false)
 
   //Generate Home Automation config information
   gc = gc + F(",\"haproto\":") + _ha.protocol;
-  gc = gc + F(",\"hatls\":") + _ha.tls;
   gc = gc + F(",\"hahost\":\"") + _ha.hostname + '"';
 
   //if for WebPage or protocol selected is MQTT
@@ -582,17 +574,8 @@ bool WebFP::AppInit(bool reInit)
   //if MQTT used so configure it
   if (_ha.protocol == HA_PROTO_MQTT)
   {
-    //setup server
-    _mqttClient.setServer(_ha.hostname, _ha.mqtt.port).setCallback(std::bind(&WebFP::MqttCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
-    //setup client used
-    if (!_ha.tls)
-      _mqttClient.setClient(_wifiMqttClient);
-    else
-    {
-      //_wifiMqttClientSecure.setFingerprint(Utils::FingerPrintA2S(fpStr, ha.fingerPrint));
-      _mqttClient.setClient(_wifiMqttClientSecure);
-    }
+    //setup MQTT client
+    _mqttClient.setClient(_wifiClient).setServer(_ha.hostname, _ha.mqtt.port).setCallback(std::bind(&WebFP::MqttCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     //Connect
     MqttConnect();
