@@ -1,6 +1,5 @@
 #include "WebDS18B20Bus.h"
 
-
 //----------------------------------------------------------------------
 // --- DS18B20Bus Class---
 //----------------------------------------------------------------------
@@ -462,7 +461,6 @@ void WebDS18B20Bus::SetConfigDefaultValues()
   _ds18b20Bus = NULL;
 
   _ha.protocol = HA_PROTO_DISABLED;
-  _ha.tls = false;
   _ha.hostname[0] = 0;
   _ha.uploadPeriod = 60;
 
@@ -478,8 +476,6 @@ void WebDS18B20Bus::ParseConfigJSON(DynamicJsonDocument &doc)
 {
   if (!doc[F("haproto")].isNull())
     _ha.protocol = doc[F("haproto")];
-  if (!doc[F("hatls")].isNull())
-    _ha.tls = doc[F("hatls")];
   if (!doc[F("hahost")].isNull())
     strlcpy(_ha.hostname, doc[F("hahost")], sizeof(_ha.hostname));
   if (!doc[F("haupperiod")].isNull())
@@ -509,10 +505,6 @@ bool WebDS18B20Bus::ParseConfigWebRequest(AsyncWebServerRequest *request)
   //if an home Automation protocol has been selected then get common param
   if (_ha.protocol != HA_PROTO_DISABLED)
   {
-    if (request->hasParam(F("hatls"), true))
-      _ha.tls = (request->getParam(F("hatls"), true)->value() == F("on"));
-    else
-      _ha.tls = false;
     if (request->hasParam(F("hahost"), true) && request->getParam(F("hahost"), true)->value().length() < sizeof(_ha.hostname))
       strcpy(_ha.hostname, request->getParam(F("hahost"), true)->value().c_str());
     if (request->hasParam(F("haupperiod"), true))
@@ -562,7 +554,6 @@ String WebDS18B20Bus::GenerateConfigJSON(bool forSaveFile = false)
   String gc('{');
 
   gc = gc + F("\"haproto\":") + _ha.protocol;
-  gc = gc + F(",\"hatls\":") + _ha.tls;
   gc = gc + F(",\"hahost\":\"") + _ha.hostname + '"';
   gc = gc + F(",\"haupperiod\":") + _ha.uploadPeriod;
 
@@ -660,17 +651,8 @@ bool WebDS18B20Bus::AppInit(bool reInit)
   //if MQTT used so configure it
   if (_ha.protocol == HA_PROTO_MQTT)
   {
-    //setup server
-    _mqttClient.setServer(_ha.hostname, _ha.mqtt.port).setCallback(std::bind(&WebDS18B20Bus::MqttCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
-    //setup client used
-    if (!_ha.tls)
-      _mqttClient.setClient(_wifiMqttClient);
-    else
-    {
-      //_wifiMqttClientSecure.setFingerprint(Utils::FingerPrintA2S(fpStr, ha.fingerPrint));
-      _mqttClient.setClient(_wifiMqttClientSecure);
-    }
+    //setup MQTT client
+    _mqttClient.setClient(_wifiClient).setServer(_ha.hostname, _ha.mqtt.port).setCallback(std::bind(&WebDS18B20Bus::MqttCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     //Connect
     MqttConnect();
