@@ -176,6 +176,12 @@
 
                 triggerEvent($(qsp+'#'+k),'change');
             }
+            else if($(qsp+'#'+k)){
+                if($(qsp+'#'+k).type!='checkbox') $(qsp+'#'+k).value=GC[k];
+                else $(qsp+'#'+k).checked=GC[k];
+
+                triggerEvent($(qsp+'#'+k),'change');
+            }
         }
 
         $(qsp+"#f input[type=submit]").disabled=false;
