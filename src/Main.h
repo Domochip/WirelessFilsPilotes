@@ -21,12 +21,13 @@
   - 51-99 : Confort
 */
 
-//include Application header file
-#include "WirelessFilsPilotes.h"
-#include "WebDS18B20Bus.h"
 
 //model is 1, 4 or 8
 #define MODEL_WFP 8
+
+//include Application header file
+#include "WirelessFilsPilotes.h"
+#include "WebDS18B20Bus.h"
 
 #if MODEL_WFP == 1
 #define APPLICATION1_NAME "WFP1"
