@@ -48,7 +48,7 @@
 #define DEFAULT_AP_SSID "WirelessFP"
 #define DEFAULT_AP_PSK "PasswordFP"
 
-//Enable developper mode (fwdev webpage and SPIFFS is used)
+//Enable developper mode
 #define DEVELOPPER_MODE 0
 
 //Choose Serial Speed
