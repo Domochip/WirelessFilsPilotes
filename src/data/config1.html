@@ -169,19 +169,14 @@
         for(k in GC){
             if(k.match(/fp[0-9]n/)){
                 var i=k[2];
-                $(qsp+"#fpnl").innerHTML+='<div class="pure-control-group"><label for="fp'+i+'n">FP'+i+' Name</label><input id="fp'+i+'n" name="fp'+i+'n" type="text"></div>';
-
+                $(qsp+"#fpnl").innerHTML+='<div class="pure-control-group"><label for="fp'+i+'n">FP'+i+' Name</label><input id="fp'+i+'n" name="fp'+i+'n" type="text" value="'+GC[k]+'"></div>';
+            }
+            else{
                 if($(qsp+'#'+k).type!='checkbox') $(qsp+'#'+k).value=GC[k];
                 else $(qsp+'#'+k).checked=GC[k];
-
-                triggerEvent($(qsp+'#'+k),'change');
             }
-            else if($(qsp+'#'+k)){
-                if($(qsp+'#'+k).type!='checkbox') $(qsp+'#'+k).value=GC[k];
-                else $(qsp+'#'+k).checked=GC[k];
 
-                triggerEvent($(qsp+'#'+k),'change');
-            }
+            triggerEvent($(qsp+'#'+k),'change');
         }
 
         $(qsp+"#f input[type=submit]").disabled=false;
