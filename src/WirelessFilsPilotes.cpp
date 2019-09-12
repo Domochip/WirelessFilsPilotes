@@ -7,8 +7,8 @@ void WebFP::TimerTickON(byte fpNumber, byte liveOnDuration)
 {
 
 //DEBUG
-Serial.print("---TimerTickON--- clock : ");Serial.println(millis()/1000);
-Serial.print("fp : ");Serial.print(fpNumber);Serial.print(" ; duration : ");Serial.print(liveOnDuration);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
+//Serial.print("---TimerTickON--- clock : ");Serial.println(millis()/1000);
+//Serial.print("fp : ");Serial.print(fpNumber);Serial.print(" ; duration : ");Serial.print(liveOnDuration);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
 
 //if 3 or 7sec previous timer already exists then clean it
 //if (_comfortTimer[fpNumber].getNumTimers() > 1) _comfortTimer[fpNumber].deleteTimer(1);
@@ -39,8 +39,8 @@ void WebFP::TimerTickOFF(byte fpNumber)
 {
 
 //DEBUG
-Serial.print("---TimerTickOFF--- clock : ");Serial.println(millis()/1000);
-Serial.print("fp : ");Serial.println(fpNumber);
+// Serial.print("---TimerTickOFF--- clock : ");Serial.println(millis()/1000);
+// Serial.print("fp : ");Serial.println(fpNumber);
 
 //Stop Full Live signal
 #if (MODEL_WFP > 1)
@@ -62,8 +62,8 @@ Serial.print("fp : ");Serial.println(fpNumber);
 void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
 {
   //DEBUG
-  Serial.print("---setFP--- clock : ");Serial.println(millis()/1000);
-  Serial.print("fp : ");Serial.print(fpNumber);Serial.print(" ; state : ");Serial.print(stateNumber);Serial.print(" ; force : ");Serial.print(force);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
+  // Serial.print("---setFP--- clock : ");Serial.println(millis()/1000);
+  // Serial.print("fp : ");Serial.print(fpNumber);Serial.print(" ; state : ");Serial.print(stateNumber);Serial.print(" ; force : ");Serial.print(force);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
 
   //if fpNumber is over (like from init) then drop
   if (fpNumber >= MODEL_WFP)
