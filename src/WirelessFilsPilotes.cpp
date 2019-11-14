@@ -39,8 +39,8 @@ void WebFP::TimerTickOFF(byte fpNumber)
 {
 
 //DEBUG
-// Serial.print("---TimerTickOFF--- clock : ");Serial.println(millis()/1000);
-// Serial.print("fp : ");Serial.println(fpNumber);
+// LOG_SERIAL.print("---TimerTickOFF--- clock : ");Serial.println(millis()/1000);
+// LOG_SERIAL.print("fp : ");Serial.println(fpNumber);
 
 //Stop Full Live signal
 #if (MODEL_WFP > 1)
@@ -62,8 +62,8 @@ void WebFP::TimerTickOFF(byte fpNumber)
 void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
 {
   //DEBUG
-  // Serial.print("---setFP--- clock : ");Serial.println(millis()/1000);
-  // Serial.print("fp : ");Serial.print(fpNumber);Serial.print(" ; state : ");Serial.print(stateNumber);Serial.print(" ; force : ");Serial.print(force);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
+  // LOG_SERIAL.print("---setFP--- clock : ");Serial.println(millis()/1000);
+  // LOG_SERIAL.print("fp : ");Serial.print(fpNumber);Serial.print(" ; state : ");Serial.print(stateNumber);Serial.print(" ; force : ");Serial.print(force);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
 
   //if fpNumber is over (like from init) then drop
   if (fpNumber >= MODEL_WFP)
@@ -729,17 +729,17 @@ void WebFP::AppRun()
   if (_needMqttReconnect)
   {
     _needMqttReconnect = false;
-    Serial.print(F("MQTT Reconnection : "));
+    LOG_SERIAL.print(F("MQTT Reconnection : "));
     if (MqttConnect())
-      Serial.println(F("OK"));
+      LOG_SERIAL.println(F("OK"));
     else
-      Serial.println(F("Failed"));
+      LOG_SERIAL.println(F("Failed"));
   }
 
   //if MQTT required but not connected and reconnect ticker not started
   if (_ha.protocol == HA_PROTO_MQTT && !_mqttClient.connected() && !_mqttReconnectTicker.active())
   {
-    Serial.println(F("MQTT Disconnected"));
+    LOG_SERIAL.println(F("MQTT Disconnected"));
     //set Ticker to reconnect after 20 or 60 sec (Wifi connected or not)
     _mqttReconnectTicker.once_scheduled((WiFi.isConnected() ? 20 : 60), [this]() { _needMqttReconnect = true; _mqttReconnectTicker.detach(); });
   }
