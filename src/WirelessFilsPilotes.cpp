@@ -194,7 +194,7 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
     if (_ha.protocol == HA_PROTO_MQTT)
     {
       //if we are connected
-      if (_mqttClient.connected())
+      if (m_mqttMan.connected())
       {
         //prepare topic
         String completeTopic = _ha.mqtt.generic.baseTopic;
@@ -234,7 +234,7 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
           completeTopic.replace(F("$fpn$"), String(fpNumber + 1));
 
         //Then publish
-        _haSendResult = _mqttClient.publish(completeTopic.c_str(), String(stateNumber).c_str());
+        _haSendResult = m_mqttMan.publish(completeTopic.c_str(), String(stateNumber).c_str());
       }
     }
 
@@ -260,71 +260,49 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
 
 //------------------------------------------
 // Connect then Subscribe to MQTT
-bool WebFP::MqttConnect()
+void WebFP::MqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection)
 {
-  if (!WiFi.isConnected())
-    return false;
+  String completeTopic = _ha.mqtt.generic.baseTopic;
 
-  char sn[9];
-  sprintf_P(sn, PSTR("%08x"), ESP.getChipId());
+  //check for final slash
+  if (completeTopic.length() && completeTopic.charAt(completeTopic.length() - 1) != '/')
+    completeTopic += '/';
 
-  //generate clientID
-  String clientID(F(APPLICATION1_NAME));
-  clientID += sn;
-
-  //Connect
-  if (!_ha.mqtt.username[0])
-    _mqttClient.connect(clientID.c_str());
-  else
-    _mqttClient.connect(clientID.c_str(), _ha.mqtt.username, _ha.mqtt.password);
-
-  //Subscribe to needed topic
-  if (_mqttClient.connected())
+  //build correct topic
+  switch (_ha.mqtt.type)
   {
-    String completeTopic = _ha.mqtt.generic.baseTopic;
-
-    //check for final slash
-    if (completeTopic.length() && completeTopic.charAt(completeTopic.length() - 1) != '/')
-      completeTopic += '/';
-
-    //build correct topic
-    switch (_ha.mqtt.type)
-    {
-    case HA_MQTT_GENERIC_1:
-      completeTopic += F("$fpn$/command");
-      break;
-    case HA_MQTT_GENERIC_2:
-      completeTopic += F("command$fpn$");
-      break;
-    }
-
-    //Replace placeholders
-    if (completeTopic.indexOf(F("$sn$")) != -1)
-    {
-      char sn[9];
-      sprintf_P(sn, PSTR("%08x"), ESP.getChipId());
-      completeTopic.replace(F("$sn$"), sn);
-    }
-
-    if (completeTopic.indexOf(F("$mac$")) != -1)
-      completeTopic.replace(F("$mac$"), WiFi.macAddress());
-
-    if (completeTopic.indexOf(F("$model$")) != -1)
-      completeTopic.replace(F("$model$"), APPLICATION1_NAME);
-
-    //subscribe for each FP
-    for (byte i = 0; i < MODEL_WFP; i++)
-    {
-      String thisTopic = completeTopic;
-
-      if (thisTopic.indexOf(F("$fpn$")) != -1)
-        thisTopic.replace(F("$fpn$"), String(i + 1));
-
-      _mqttClient.subscribe(thisTopic.c_str());
-    }
+  case HA_MQTT_GENERIC_1:
+    completeTopic += F("$fpn$/command");
+    break;
+  case HA_MQTT_GENERIC_2:
+    completeTopic += F("command$fpn$");
+    break;
   }
 
-  return _mqttClient.connected();
+  //Replace placeholders
+  if (completeTopic.indexOf(F("$sn$")) != -1)
+  {
+    char sn[9];
+    sprintf_P(sn, PSTR("%08x"), ESP.getChipId());
+    completeTopic.replace(F("$sn$"), sn);
+  }
+
+  if (completeTopic.indexOf(F("$mac$")) != -1)
+    completeTopic.replace(F("$mac$"), WiFi.macAddress());
+
+  if (completeTopic.indexOf(F("$model$")) != -1)
+    completeTopic.replace(F("$model$"), APPLICATION1_NAME);
+
+  //subscribe for each FP
+  for (byte i = 0; i < MODEL_WFP; i++)
+  {
+    String thisTopic = completeTopic;
+
+    if (thisTopic.indexOf(F("$fpn$")) != -1)
+      thisTopic.replace(F("$fpn$"), String(i + 1));
+
+    mqttMan->subscribe(thisTopic.c_str());
+  }
 }
 //------------------------------------------
 //Callback used when an MQTT message arrived
@@ -521,7 +499,7 @@ String WebFP::GenerateStatusJSON()
     break;
   case HA_PROTO_MQTT:
     gs = gs + F("MQTT Connection State : ");
-    switch (_mqttClient.state())
+    switch (m_mqttMan.state())
     {
     case MQTT_CONNECTION_TIMEOUT:
       gs = gs + F("Timed Out");
@@ -552,7 +530,7 @@ String WebFP::GenerateStatusJSON()
       break;
     }
 
-    if (_mqttClient.state() == MQTT_CONNECTED)
+    if (m_mqttMan.state() == MQTT_CONNECTED)
       gs = gs + F("\",\"has2\":\"Last Publish Result : ") + (_haSendResult ? F("OK") : F("Failed"));
 
     break;
@@ -566,19 +544,19 @@ String WebFP::GenerateStatusJSON()
 //code to execute during initialization and reinitialization of the app
 bool WebFP::AppInit(bool reInit)
 {
-  //Stop MQTT Reconnect
-  _mqttReconnectTicker.detach();
-  if (_mqttClient.connected()) //Issue #598 : disconnect() crash if client not yet set
-    _mqttClient.disconnect();
+  //Stop MQTT
+  m_mqttMan.disconnect();
 
   //if MQTT used so configure it
   if (_ha.protocol == HA_PROTO_MQTT)
   {
-    //setup MQTT client
-    _mqttClient.setClient(_wifiClient).setServer(_ha.hostname, _ha.mqtt.port).setCallback(std::bind(&WebFP::MqttCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    //setup MQTT
+    m_mqttMan.setClient(_wifiClient).setServer(_ha.hostname, _ha.mqtt.port);
+    m_mqttMan.setConnectedCallback(std::bind(&WebFP::MqttConnectedCallback, this, std::placeholders::_1, std::placeholders::_2));
+    m_mqttMan.setCallback(std::bind(&WebFP::MqttCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     //Connect
-    MqttConnect();
+    m_mqttMan.connect(_ha.mqtt.username, _ha.mqtt.password);
   }
 
   if (!reInit)
@@ -726,26 +704,8 @@ void WebFP::AppRun()
   for (byte i = 0; i < MODEL_WFP; i++)
     _comfortTimer[i].run();
 
-  if (_needMqttReconnect)
-  {
-    _needMqttReconnect = false;
-    LOG_SERIAL.print(F("MQTT Reconnection : "));
-    if (MqttConnect())
-      LOG_SERIAL.println(F("OK"));
-    else
-      LOG_SERIAL.println(F("Failed"));
-  }
-
-  //if MQTT required but not connected and reconnect ticker not started
-  if (_ha.protocol == HA_PROTO_MQTT && !_mqttClient.connected() && !_mqttReconnectTicker.active())
-  {
-    LOG_SERIAL.println(F("MQTT Disconnected"));
-    //set Ticker to reconnect after 20 or 60 sec (Wifi connected or not)
-    _mqttReconnectTicker.once_scheduled((WiFi.isConnected() ? 20 : 60), [this]() { _needMqttReconnect = true; _mqttReconnectTicker.detach(); });
-  }
-
   if (_ha.protocol == HA_PROTO_MQTT)
-    _mqttClient.loop();
+    m_mqttMan.loop();
 }
 
 //------------------------------------------

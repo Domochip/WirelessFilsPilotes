@@ -1,12 +1,9 @@
 #ifndef WirelessFilsPilotes_h
 #define WirelessFilsPilotes_h
 
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-
 #include "Main.h"
 #include "base\Utils.h"
+#include "base\MQTTMan.h"
 #include "base\Application.h"
 
 const char appDataPredefPassword[] PROGMEM = "ewcXoCt4HHjZUvY1";
@@ -16,7 +13,6 @@ const char appDataPredefPassword[] PROGMEM = "ewcXoCt4HHjZUvY1";
 
 #include <ESP8266HTTPClient.h>
 #include <Adafruit_MCP23017.h>
-#include <PubSubClient.h>
 #include <Ticker.h>
 #include "SimpleTimer.h"
 
@@ -56,9 +52,7 @@ private:
   int _haSendResult = 0;
   WiFiClient _wifiClient;
 
-  PubSubClient _mqttClient;
-  bool _needMqttReconnect = false;
-  Ticker _mqttReconnectTicker;
+  MQTTMan m_mqttMan;
 
   //Pin Map is list of pins by pair corresponding to FilsPilotes
   //{Positive of FP1,Negative of FP1,Positive of FP2,Negative of FP2,etc.,...}
@@ -77,7 +71,7 @@ private:
   void TimerTickOFF(byte fpNumber);
 
   void setFP(byte fpNumber, byte stateNumber, bool force = false);
-  bool MqttConnect();
+  void MqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection);
   void MqttCallback(char *topic, uint8_t *payload, unsigned int length);
 
   void SetConfigDefaultValues();
