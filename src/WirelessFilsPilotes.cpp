@@ -199,9 +199,8 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
         //prepare topic
         String completeTopic = _ha.mqtt.generic.baseTopic;
 
-        //check for final slash
-        if (completeTopic.length() && completeTopic.charAt(completeTopic.length() - 1) != '/')
-          completeTopic += '/';
+        //Replace placeholders
+        MQTTMan::prepareTopic(completeTopic);
 
         switch (_ha.mqtt.type)
         {
@@ -214,20 +213,6 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
           completeTopic += F("order$fpn$");
           break;
         }
-
-        //Replace placeholders
-        if (completeTopic.indexOf(F("$sn$")) != -1)
-        {
-          char sn[9];
-          sprintf_P(sn, PSTR("%08x"), ESP.getChipId());
-          completeTopic.replace(F("$sn$"), sn);
-        }
-
-        if (completeTopic.indexOf(F("$mac$")) != -1)
-          completeTopic.replace(F("$mac$"), WiFi.macAddress());
-
-        if (completeTopic.indexOf(F("$model$")) != -1)
-          completeTopic.replace(F("$model$"), APPLICATION1_NAME);
 
         //now place the Fil Pilote number
         if (completeTopic.indexOf(F("$fpn$")) != -1)
@@ -264,9 +249,8 @@ void WebFP::MqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection)
 {
   String completeTopic = _ha.mqtt.generic.baseTopic;
 
-  //check for final slash
-  if (completeTopic.length() && completeTopic.charAt(completeTopic.length() - 1) != '/')
-    completeTopic += '/';
+  //Replace placeholders
+  MQTTMan::prepareTopic(completeTopic);
 
   //build correct topic
   switch (_ha.mqtt.type)
@@ -278,20 +262,6 @@ void WebFP::MqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection)
     completeTopic += F("command$fpn$");
     break;
   }
-
-  //Replace placeholders
-  if (completeTopic.indexOf(F("$sn$")) != -1)
-  {
-    char sn[9];
-    sprintf_P(sn, PSTR("%08x"), ESP.getChipId());
-    completeTopic.replace(F("$sn$"), sn);
-  }
-
-  if (completeTopic.indexOf(F("$mac$")) != -1)
-    completeTopic.replace(F("$mac$"), WiFi.macAddress());
-
-  if (completeTopic.indexOf(F("$model$")) != -1)
-    completeTopic.replace(F("$model$"), APPLICATION1_NAME);
 
   //subscribe for each FP
   for (byte i = 0; i < MODEL_WFP; i++)
