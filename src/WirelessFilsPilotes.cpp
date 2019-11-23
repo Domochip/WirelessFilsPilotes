@@ -3,7 +3,7 @@
 //-----------------------------------------------------------------------
 // Timer Tick ON (Used to send Live to FP every 5 minutes)
 //-----------------------------------------------------------------------
-void WebFP::TimerTickON(byte fpNumber, byte liveOnDuration)
+void WebFP::timerTickON(byte fpNumber, byte liveOnDuration)
 {
 
 //DEBUG
@@ -28,14 +28,14 @@ void WebFP::TimerTickON(byte fpNumber, byte liveOnDuration)
 
   //then create Timer for Stop
   _comfortTimer[fpNumber].setTimeout(((long)liveOnDuration) * 1000, [this, fpNumber]() {
-    this->TimerTickOFF(fpNumber);
+    this->timerTickOFF(fpNumber);
   });
 }
 
 //-----------------------------------------------------------------------
 // Timer Tick OFF (Used to stop Live to FP after 3 or 7 sec)
 //-----------------------------------------------------------------------
-void WebFP::TimerTickOFF(byte fpNumber)
+void WebFP::timerTickOFF(byte fpNumber)
 {
 
 //DEBUG
@@ -147,7 +147,7 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
         //Setup Timer system
         _comfortTimer[fpNumber].setInterval(300000L, [this, fpNumber]() {
           //_comfortTimer[fpNumber].setInterval(30000L, [this,  fpNumber]() { //DEBUG
-          this->TimerTickON(fpNumber, 7);
+          this->timerTickON(fpNumber, 7);
         });
       }
       else if (stateNumber <= 50)
@@ -167,7 +167,7 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
         //Setup Timer system
         _comfortTimer[fpNumber].setInterval(300000L, [this, fpNumber]() {
           //_comfortTimer[fpNumber].setInterval(30000L, [this,  fpNumber]() { //DEBUG
-          this->TimerTickON(fpNumber, 3);
+          this->timerTickON(fpNumber, 3);
         });
       }
       else
@@ -194,7 +194,7 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
     if (_ha.protocol == HA_PROTO_MQTT)
     {
       //if we are connected
-      if (m_mqttMan.connected())
+      if (_mqttMan.connected())
       {
         //prepare topic
         String completeTopic = _ha.mqtt.generic.baseTopic;
@@ -219,7 +219,7 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
           completeTopic.replace(F("$fpn$"), String(fpNumber + 1));
 
         //Then publish
-        _haSendResult = m_mqttMan.publish(completeTopic.c_str(), String(stateNumber).c_str());
+        _haSendResult = _mqttMan.publish(completeTopic.c_str(), String(stateNumber).c_str());
       }
     }
 
@@ -245,7 +245,7 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
 
 //------------------------------------------
 // Connect then Subscribe to MQTT
-void WebFP::MqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection)
+void WebFP::mqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection)
 {
   String completeTopic = _ha.mqtt.generic.baseTopic;
 
@@ -276,7 +276,7 @@ void WebFP::MqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection)
 }
 //------------------------------------------
 //Callback used when an MQTT message arrived
-void WebFP::MqttCallback(char *topic, uint8_t *payload, unsigned int length)
+void WebFP::mqttCallback(char *topic, uint8_t *payload, unsigned int length)
 {
   byte fpValue = 0;
 
@@ -312,7 +312,7 @@ void WebFP::MqttCallback(char *topic, uint8_t *payload, unsigned int length)
 }
 //------------------------------------------
 //Used to initialize configuration properties to default values
-void WebFP::SetConfigDefaultValues()
+void WebFP::setConfigDefaultValues()
 {
   _fpNames[0][0] = 0;
   _fpNames[1][0] = 0;
@@ -334,7 +334,7 @@ void WebFP::SetConfigDefaultValues()
 };
 //------------------------------------------
 //Parse JSON object into configuration properties
-void WebFP::ParseConfigJSON(DynamicJsonDocument &doc)
+void WebFP::parseConfigJSON(DynamicJsonDocument &doc)
 {
   char fpn[5] = {'f', 'p', '1', 'n', 0};
   for (byte i = 0; i < MODEL_WFP; i++)
@@ -364,7 +364,7 @@ void WebFP::ParseConfigJSON(DynamicJsonDocument &doc)
 };
 //------------------------------------------
 //Parse HTTP POST parameters in request into configuration properties
-bool WebFP::ParseConfigWebRequest(AsyncWebServerRequest *request)
+bool WebFP::parseConfigWebRequest(AsyncWebServerRequest *request)
 {
   char fpn[5] = {'f', 'p', '1', 'n', 0};
   for (byte i = 0; i < MODEL_WFP; i++)
@@ -423,7 +423,7 @@ bool WebFP::ParseConfigWebRequest(AsyncWebServerRequest *request)
 };
 //------------------------------------------
 //Generate JSON from configuration properties
-String WebFP::GenerateConfigJSON(bool forSaveFile = false)
+String WebFP::generateConfigJSON(bool forSaveFile = false)
 {
   String gc('{');
 
@@ -454,7 +454,7 @@ String WebFP::GenerateConfigJSON(bool forSaveFile = false)
 };
 //------------------------------------------
 //Generate JSON of application status
-String WebFP::GenerateStatusJSON()
+String WebFP::generateStatusJSON()
 {
   String gs('{');
 
@@ -469,7 +469,7 @@ String WebFP::GenerateStatusJSON()
     break;
   case HA_PROTO_MQTT:
     gs = gs + F("MQTT Connection State : ");
-    switch (m_mqttMan.state())
+    switch (_mqttMan.state())
     {
     case MQTT_CONNECTION_TIMEOUT:
       gs = gs + F("Timed Out");
@@ -500,7 +500,7 @@ String WebFP::GenerateStatusJSON()
       break;
     }
 
-    if (m_mqttMan.state() == MQTT_CONNECTED)
+    if (_mqttMan.state() == MQTT_CONNECTED)
       gs = gs + F("\",\"has2\":\"Last Publish Result : ") + (_haSendResult ? F("OK") : F("Failed"));
 
     break;
@@ -512,10 +512,10 @@ String WebFP::GenerateStatusJSON()
 };
 //------------------------------------------
 //code to execute during initialization and reinitialization of the app
-bool WebFP::AppInit(bool reInit)
+bool WebFP::appInit(bool reInit)
 {
   //Stop MQTT
-  m_mqttMan.disconnect();
+  _mqttMan.disconnect();
 
   //if MQTT used so configure it
   if (_ha.protocol == HA_PROTO_MQTT)
@@ -526,13 +526,13 @@ bool WebFP::AppInit(bool reInit)
     willTopic += F("connected");
 
     //setup MQTT
-    m_mqttMan.setClient(_wifiClient).setServer(_ha.hostname, _ha.mqtt.port);
-    m_mqttMan.setConnectedAndWillTopic(willTopic.c_str());
-    m_mqttMan.setConnectedCallback(std::bind(&WebFP::MqttConnectedCallback, this, std::placeholders::_1, std::placeholders::_2));
-    m_mqttMan.setCallback(std::bind(&WebFP::MqttCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    _mqttMan.setClient(_wifiClient).setServer(_ha.hostname, _ha.mqtt.port);
+    _mqttMan.setConnectedAndWillTopic(willTopic.c_str());
+    _mqttMan.setConnectedCallback(std::bind(&WebFP::mqttConnectedCallback, this, std::placeholders::_1, std::placeholders::_2));
+    _mqttMan.setCallback(std::bind(&WebFP::mqttCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     //Connect
-    m_mqttMan.connect(_ha.mqtt.username, _ha.mqtt.password);
+    _mqttMan.connect(_ha.mqtt.username, _ha.mqtt.password);
   }
 
   if (!reInit)
@@ -583,7 +583,7 @@ bool WebFP::AppInit(bool reInit)
 };
 //------------------------------------------
 //Return HTML Code to insert into Status Web page
-const uint8_t *WebFP::GetHTMLContent(WebPageForPlaceHolder wp)
+const uint8_t *WebFP::getHTMLContent(WebPageForPlaceHolder wp)
 {
   switch (wp)
   {
@@ -600,7 +600,7 @@ const uint8_t *WebFP::GetHTMLContent(WebPageForPlaceHolder wp)
   return nullptr;
 };
 //and his Size
-size_t WebFP::GetHTMLContentSize(WebPageForPlaceHolder wp)
+size_t WebFP::getHTMLContentSize(WebPageForPlaceHolder wp)
 {
   switch (wp)
   {
@@ -618,10 +618,10 @@ size_t WebFP::GetHTMLContentSize(WebPageForPlaceHolder wp)
 };
 //------------------------------------------
 //code to register web request answer to the web server
-void WebFP::AppInitWebServer(AsyncWebServer &server, bool &shouldReboot, bool &pauseApplication)
+void WebFP::appInitWebServer(AsyncWebServer &server, bool &shouldReboot, bool &pauseApplication)
 {
   server.on("/getFP", HTTP_GET, [this](AsyncWebServerRequest *request) {
-    AsyncWebServerResponse *response = request->beginResponse(200, F("text/json"), GenerateStatusJSON());
+    AsyncWebServerResponse *response = request->beginResponse(200, F("text/json"), generateStatusJSON());
     response->addHeader("Cache-Control", "no-cache");
     request->send(response);
   });
@@ -675,13 +675,13 @@ void WebFP::AppInitWebServer(AsyncWebServer &server, bool &shouldReboot, bool &p
 
 //------------------------------------------
 //Run for timer
-void WebFP::AppRun()
+void WebFP::appRun()
 {
   for (byte i = 0; i < MODEL_WFP; i++)
     _comfortTimer[i].run();
 
   if (_ha.protocol == HA_PROTO_MQTT)
-    m_mqttMan.loop();
+    _mqttMan.loop();
 }
 
 //------------------------------------------

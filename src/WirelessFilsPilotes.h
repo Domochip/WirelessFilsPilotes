@@ -52,7 +52,7 @@ private:
   int _haSendResult = 0;
   WiFiClient _wifiClient;
 
-  MQTTMan m_mqttMan;
+  MQTTMan _mqttMan;
 
   //Pin Map is list of pins by pair corresponding to FilsPilotes
   //{Positive of FP1,Negative of FP1,Positive of FP2,Negative of FP2,etc.,...}
@@ -67,23 +67,23 @@ private:
   SimpleTimer _comfortTimer[8]; //8 SimpleTimer Object with max 2 timers inside (SimpleTimer.h)
   byte _fpStates[8] = {51, 51, 51, 51, 51, 51, 51, 51};
 
-  void TimerTickON(byte fpNumber, byte liveOnDuration);
-  void TimerTickOFF(byte fpNumber);
+  void timerTickON(byte fpNumber, byte liveOnDuration);
+  void timerTickOFF(byte fpNumber);
 
   void setFP(byte fpNumber, byte stateNumber, bool force = false);
-  void MqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection);
-  void MqttCallback(char *topic, uint8_t *payload, unsigned int length);
+  void mqttConnectedCallback(MQTTMan *mqttMan, bool firstConnection);
+  void mqttCallback(char *topic, uint8_t *payload, unsigned int length);
 
-  void SetConfigDefaultValues();
-  void ParseConfigJSON(DynamicJsonDocument &doc);
-  bool ParseConfigWebRequest(AsyncWebServerRequest *request);
-  String GenerateConfigJSON(bool forSaveFile);
-  String GenerateStatusJSON();
-  bool AppInit(bool reInit);
-  const uint8_t *GetHTMLContent(WebPageForPlaceHolder wp);
-  size_t GetHTMLContentSize(WebPageForPlaceHolder wp);
-  void AppInitWebServer(AsyncWebServer &server, bool &shouldReboot, bool &pauseApplication);
-  void AppRun();
+  void setConfigDefaultValues();
+  void parseConfigJSON(DynamicJsonDocument &doc);
+  bool parseConfigWebRequest(AsyncWebServerRequest *request);
+  String generateConfigJSON(bool forSaveFile);
+  String generateStatusJSON();
+  bool appInit(bool reInit);
+  const uint8_t *getHTMLContent(WebPageForPlaceHolder wp);
+  size_t getHTMLContentSize(WebPageForPlaceHolder wp);
+  void appInitWebServer(AsyncWebServer &server, bool &shouldReboot, bool &pauseApplication);
+  void appRun();
 
 public:
   WebFP(char appId, String fileName);
