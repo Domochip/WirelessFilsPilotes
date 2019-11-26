@@ -2,7 +2,8 @@
 <div id="shortApplicationName" style="display: none;">WFP1/4/8</div>
 
 <h2 class="content-subhead">Fils Pilotes<span id="l"><h6 style="display:inline"><b> Loading...</b></h6></span></h2>
-<span id="FPList"></span>
+<h3 class="content-subhead">FP List<span id="lastRefresh"> (AutoRefresh)</span></h3>
+<dl id="liveData"></dl>
 <h3 class="content-subhead">Home Automation Status</h3>
 <span id="has1"></span><br>
 <span id="has2"></span>
@@ -11,49 +12,75 @@
     //QuerySelector Prefix is added by load function to know into what element queySelector need to look for
     //var qsp = '#contentX ';
 
-    function generateFPButtons(fpNumber,currentValue){
+    function generateFPButtons(kForId){
         var ret='<div class="pure-button-group" role="group">';
         ret+='<style scoped>.pure-button-active{background: rgb(31, 141, 214);}</style>';
-        ret+='<button id="FP'+fpNumber+'v51" class="pure-button'+(currentValue>50?' pure-button-active':'')+'">Confort</button>';
-        ret+='<button id="FP'+fpNumber+'v41" class="pure-button'+(currentValue>40&&currentValue<51?' pure-button-active':'')+'">Confort-1</button>';
-        ret+='<button id="FP'+fpNumber+'v31" class="pure-button'+(currentValue>30&&currentValue<41?' pure-button-active':'')+'">Confort-2</button>';
-        ret+='<button id="FP'+fpNumber+'v21" class="pure-button'+(currentValue>20&&currentValue<31?' pure-button-active':'')+'">Eco</button>';
-        ret+='<button id="FP'+fpNumber+'v11" class="pure-button'+(currentValue>10&&currentValue<21?' pure-button-active':'')+'">Hors Gel</button>';
-        ret+='<button id="FP'+fpNumber+'v1" class="pure-button'+(currentValue<11?' pure-button-active':'')+'">Arrêt</button>';
+        ret+='<button id="'+kForId+'v51" class="pure-button">Confort</button>';
+        ret+='<button id="'+kForId+'v41" class="pure-button">Confort-1</button>';
+        ret+='<button id="'+kForId+'v31" class="pure-button">Confort-2</button>';
+        ret+='<button id="'+kForId+'v21" class="pure-button">Eco</button>';
+        ret+='<button id="'+kForId+'v11" class="pure-button">Hors Gel</button>';
+        ret+='<button id="'+kForId+'v1" class="pure-button">Arrêt</button>';
         ret+='</div>';
 
         return ret;
     }
 
-    function showCurrentFP(fpNumber,newValue){
-        if(newValue<51) $(qsp+"#FP"+fpNumber+"v51").classList.remove("pure-button-active"); else $(qsp+"#FP"+fpNumber+"v51").classList.add("pure-button-active");
-        if(newValue<41 || newValue>50) $(qsp+"#FP"+fpNumber+"v41").classList.remove("pure-button-active"); else $(qsp+"#FP"+fpNumber+"v41").classList.add("pure-button-active");
-        if(newValue<31 || newValue>40) $(qsp+"#FP"+fpNumber+"v31").classList.remove("pure-button-active"); else $(qsp+"#FP"+fpNumber+"v31").classList.add("pure-button-active");
-        if(newValue<21 || newValue>30) $(qsp+"#FP"+fpNumber+"v21").classList.remove("pure-button-active"); else $(qsp+"#FP"+fpNumber+"v21").classList.add("pure-button-active");
-        if(newValue<11 || newValue>20) $(qsp+"#FP"+fpNumber+"v11").classList.remove("pure-button-active"); else $(qsp+"#FP"+fpNumber+"v11").classList.add("pure-button-active");
-        if(newValue>10) $(qsp+"#FP"+fpNumber+"v1").classList.remove("pure-button-active"); else $(qsp+"#FP"+fpNumber+"v1").classList.add("pure-button-active");
+    function showCurrentFP(kForId,newValue){
+        if(newValue<51) $(qsp+"#"+kForId+"v51").classList.remove("pure-button-active"); else $(qsp+"#"+kForId+"v51").classList.add("pure-button-active");
+        if(newValue<41 || newValue>50) $(qsp+"#"+kForId+"v41").classList.remove("pure-button-active"); else $(qsp+"#"+kForId+"v41").classList.add("pure-button-active");
+        if(newValue<31 || newValue>40) $(qsp+"#"+kForId+"v31").classList.remove("pure-button-active"); else $(qsp+"#"+kForId+"v31").classList.add("pure-button-active");
+        if(newValue<21 || newValue>30) $(qsp+"#"+kForId+"v21").classList.remove("pure-button-active"); else $(qsp+"#"+kForId+"v21").classList.add("pure-button-active");
+        if(newValue<11 || newValue>20) $(qsp+"#"+kForId+"v11").classList.remove("pure-button-active"); else $(qsp+"#"+kForId+"v11").classList.add("pure-button-active");
+        if(newValue>10) $(qsp+"#"+kForId+"v1").classList.remove("pure-button-active"); else $(qsp+"#"+kForId+"v1").classList.add("pure-button-active");
     }
 
-    $(qsp+"#FPList").addEventListener('click',function(evt){
+    function parseLiveData(liveData){
+        for(k in liveData){
+            kForId=(/[^a-zA-Z]/.test(k[0]) ? 'a' : '')+k; //k[0] is not in a-zA-Z then we need to add 'a'
+            if($(qsp+'#'+kForId) != undefined){
+                var existingElement= $(qsp+'#'+kForId+'Value');
+                if(existingElement.tagName=='INPUT'){
+                    if(existingElement.val!=liveData[k]){
+                        existingElement.val=liveData[k];
+                        existingElement.dispatchEvent(new Event('change'));
+                    }
+                }
+                else{
+                    if(existingElement.innerText!=liveData[k]){
+                        existingElement.innerText=liveData[k];
+                        existingElement.style.fontWeight="bold";
+                    }
+                    else{
+                        existingElement.style.fontWeight="normal";
+                    }
+                }
+            }
+            else{
+                var newElement = document.createElement("dd");
+                newElement.id=kForId;
+                newElement.innerHTML=k+' <input type="hidden" id="'+kForId+'Value">: <b><span id="fp'+k[2]+'n"></span></b>'+ generateFPButtons(kForId);
+
+                $(qsp+'#liveData').appendChild(newElement);
+
+                $(qsp+'#'+kForId+'Value').addEventListener('change',function(evt){showCurrentFP(evt.srcElement.id.replace('Value',''),evt.srcElement.val)});
+                showCurrentFP(kForId,liveData[k]);
+            }
+        }
+    }
+
+    $(qsp+"#liveData").addEventListener('click',function(evt){
         var res;
         if(res=evt.srcElement.id.match(/FP([1-8])v([0-9]{1,2})/)){
-            get('/setFP?FP'+res[1]+'='+res[2],
-                function(){
-                    showCurrentFP(res[1],res[2]);
-                }
-            );
+            get('/setFP?FP'+res[1]+'='+res[2]);
         }
     });
 
     getJSON("/gs"+qsp[8],
         function(GS){
             for(k in GS){
-                if(k.match(/FP[1-8]/)){
-                    $(qsp+'#FPList').innerHTML+=k+' : <b><span id="fp'+k[2]+'n"></span></b>'+ generateFPButtons(k[2],GS[k]) +'<br>';
-                }
-                else{
-                    if((e = $(qsp+'#'+k)) != undefined) e.innerHTML = GS[k];
-                }
+                if(k=='liveData') parseLiveData(GS[k]);
+                else if((e = $(qsp+'#'+k)) != undefined) e.innerHTML = GS[k];
             }
 
             getJSON("/gc"+qsp[8],
@@ -70,4 +97,13 @@
             $(qsp+"#l").innerHTML='<h4 style="display:inline;color:red;"><b> Failed</b></h4>';
         }
     );
+
+    if (!!window.EventSource) {
+        var statusEventSource = new EventSource('/statusEvt'+qsp[8]);
+        statusEventSource.addEventListener('message', function(e) {
+            console.log('statusEvt'+qsp[8]+' : '+e.data);
+            parseLiveData(JSON.parse(e.data));
+            $(qsp+'#lastRefresh').innerText=' ('+(new Date()).toLocaleString()+')';
+        });
+    }
 </script>

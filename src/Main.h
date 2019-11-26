@@ -40,13 +40,13 @@
 #define APPLICATION2_CLASS WebDS18B20Bus
 #endif
 
-#define VERSION_NUMBER "3.4.0"
+#define VERSION_NUMBER "3.4.1"
 
 #define DEFAULT_AP_SSID "WirelessFP"
 #define DEFAULT_AP_PSK "PasswordFP"
 
 //Enable status webpage EventSource
-#define ENABLE_STATUS_EVENTSOURCE 0
+#define ENABLE_STATUS_EVENTSOURCE 1
 
 //Enable developper mode
 #define DEVELOPPER_MODE 0

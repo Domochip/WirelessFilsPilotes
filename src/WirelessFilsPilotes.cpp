@@ -233,6 +233,11 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
           SPIFFS.remove("/FPState.bin");
       }
     }
+
+    //Send new FP order to Web clients through EventSource
+    char json[12];
+    sprintf_P(json, PSTR("{\"FP%d\":%d}"), fpNumber + 1, stateNumber);
+    _statusEventSource.send(json);
   }
 }
 
@@ -451,8 +456,10 @@ String WebFP::generateStatusJSON()
 {
   String gs('{');
 
+  gs = gs + F("\"liveData\":{");
   for (byte i = 0; i < MODEL_WFP; i++)
     gs = gs + (i ? "," : "") + F("\"FP") + (i + 1) + F("\":") + _fpStates[i];
+  gs = gs + '}';
 
   gs = gs + F(",\"has1\":\"");
   switch (_ha.protocol)
