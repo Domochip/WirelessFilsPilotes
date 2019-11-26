@@ -5,13 +5,9 @@
 //-----------------------------------------------------------------------
 void WebFP::timerTickON(byte fpNumber, byte liveOnDuration)
 {
-
-//DEBUG
-//Serial.print("---TimerTickON--- clock : ");Serial.println(millis()/1000);
-//Serial.print("fp : ");Serial.print(fpNumber);Serial.print(" ; duration : ");Serial.print(liveOnDuration);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
-
-//if 3 or 7sec previous timer already exists then clean it
-//if (_comfortTimer[fpNumber].getNumTimers() > 1) _comfortTimer[fpNumber].deleteTimer(1);
+#if DEVELOPPER_MODE
+  LOG_SERIAL.println(String(millis() / 1000) + F(" timerTickON : fp=") + fpNumber + F(";duration=") + liveOnDuration);
+#endif
 
 //Send Full Live signal
 #if (MODEL_WFP > 1)
@@ -37,10 +33,9 @@ void WebFP::timerTickON(byte fpNumber, byte liveOnDuration)
 //-----------------------------------------------------------------------
 void WebFP::timerTickOFF(byte fpNumber)
 {
-
-//DEBUG
-// LOG_SERIAL.print("---TimerTickOFF--- clock : ");Serial.println(millis()/1000);
-// LOG_SERIAL.print("fp : ");Serial.println(fpNumber);
+#if DEVELOPPER_MODE
+  LOG_SERIAL.println(String(millis() / 1000) + F(" timerTickOFF : fp=") + fpNumber);
+#endif
 
 //Stop Full Live signal
 #if (MODEL_WFP > 1)
@@ -61,9 +56,9 @@ void WebFP::timerTickOFF(byte fpNumber)
 //-----------------------------------------------------------------------
 void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
 {
-  //DEBUG
-  // LOG_SERIAL.print("---setFP--- clock : ");Serial.println(millis()/1000);
-  // LOG_SERIAL.print("fp : ");Serial.print(fpNumber);Serial.print(" ; state : ");Serial.print(stateNumber);Serial.print(" ; force : ");Serial.print(force);Serial.print(" ; nbT : ");Serial.println(_comfortTimer[fpNumber].getNumTimers());
+#if DEVELOPPER_MODE
+  LOG_SERIAL.println(String(millis() / 1000) + F(" setFP : fp=") + fpNumber + F(";state=") + stateNumber + F(";force=") + force);
+#endif
 
   //if fpNumber is over (like from init) then drop
   if (fpNumber >= MODEL_WFP)
