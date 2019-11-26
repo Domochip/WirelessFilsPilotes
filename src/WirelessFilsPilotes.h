@@ -14,7 +14,6 @@ const char appDataPredefPassword[] PROGMEM = "ewcXoCt4HHjZUvY1";
 #include <ESP8266HTTPClient.h>
 #include <Adafruit_MCP23017.h>
 #include <Ticker.h>
-#include "SimpleTimer.h"
 
 class WebFP : public Application
 {
@@ -64,7 +63,7 @@ private:
 #if (MODEL_WFP > 1)
   Adafruit_MCP23017 _mcp23017;
 #endif
-  SimpleTimer _comfortTimer[8]; //8 SimpleTimer Object with max 2 timers inside (SimpleTimer.h)
+  Ticker _comfortTickers[16];
   byte _fpStates[8] = {51, 51, 51, 51, 51, 51, 51, 51};
 
   void timerTickON(byte fpNumber, byte liveOnDuration);

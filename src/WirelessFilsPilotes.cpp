@@ -22,8 +22,8 @@ void WebFP::timerTickON(byte fpNumber, byte liveOnDuration)
   digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], LOW);
 #endif
 
-  //then create Timer for Stop
-  _comfortTimer[fpNumber].setTimeout(((long)liveOnDuration) * 1000, [this, fpNumber]() {
+  //then create Ticker for Stop
+  _comfortTickers[fpNumber * 2 + 1].once(liveOnDuration, [this, fpNumber]() {
     this->timerTickOFF(fpNumber);
   });
 }
@@ -77,11 +77,11 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
         force)
     {
 
-      //clean up comfortTimer of current FP (Will be recreated if necessary)
-      if (_comfortTimer[fpNumber].getNumTimers() > 1)
-        _comfortTimer[fpNumber].deleteTimer(1);
-      if (_comfortTimer[fpNumber].getNumTimers() > 0)
-        _comfortTimer[fpNumber].deleteTimer(0);
+      //clean up comfortTicker of current FP (Will be reattached if necessary)
+      if (_comfortTickers[fpNumber * 2].active())
+        _comfortTickers[fpNumber * 2].detach();
+      if (_comfortTickers[fpNumber * 2 + 1].active())
+        _comfortTickers[fpNumber * 2 + 1].detach();
 
       //Then apply it
       if (stateNumber <= 10)
@@ -139,9 +139,8 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
         digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
 #endif
 
-        //Setup Timer system
-        _comfortTimer[fpNumber].setInterval(300000L, [this, fpNumber]() {
-          //_comfortTimer[fpNumber].setInterval(30000L, [this,  fpNumber]() { //DEBUG
+        //Setup Ticker system
+        _comfortTickers[fpNumber * 2].attach(300.0F, [this, fpNumber]() {
           this->timerTickON(fpNumber, 7);
         });
       }
@@ -159,9 +158,8 @@ void WebFP::setFP(byte fpNumber, byte stateNumber, bool force)
         digitalWrite(_FPPINMAP[(fpNumber * 2) + 1], HIGH);
 #endif
 
-        //Setup Timer system
-        _comfortTimer[fpNumber].setInterval(300000L, [this, fpNumber]() {
-          //_comfortTimer[fpNumber].setInterval(30000L, [this,  fpNumber]() { //DEBUG
+        //Setup Ticker system
+        _comfortTickers[fpNumber * 2].attach(300.0F, [this, fpNumber]() {
           this->timerTickON(fpNumber, 3);
         });
       }
@@ -672,9 +670,6 @@ void WebFP::appInitWebServer(AsyncWebServer &server, bool &shouldReboot, bool &p
 //Run for timer
 void WebFP::appRun()
 {
-  for (byte i = 0; i < MODEL_WFP; i++)
-    _comfortTimer[i].run();
-
   if (_ha.protocol == HA_PROTO_MQTT)
     _mqttMan.loop();
 }

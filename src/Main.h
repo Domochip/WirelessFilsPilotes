@@ -40,7 +40,7 @@
 #define APPLICATION2_CLASS WebDS18B20Bus
 #endif
 
-#define VERSION_NUMBER "3.3.2"
+#define VERSION_NUMBER "3.4.0"
 
 #define DEFAULT_AP_SSID "WirelessFP"
 #define DEFAULT_AP_PSK "PasswordFP"
