@@ -2,7 +2,7 @@
 <div id="shortApplicationName" style="display: none;">WFP1/4/8</div>
 
 <h2 class="content-subhead">Fils Pilotes<span id="l"><h6 style="display:inline"><b> Loading...</b></h6></span></h2>
-<h3 class="content-subhead">FP List<span id="lastRefresh"> (AutoRefresh)</span></h3>
+<h3 class="content-subhead">FP List (<span id="lastRefresh">AutoRefresh</span>)</h3>
 <dl id="liveData"></dl>
 <h3 class="content-subhead">Home Automation Status</h3>
 <span id="has1"></span><br>
@@ -36,8 +36,10 @@
     }
 
     function parseLiveData(liveData){
+        if($(qsp+'#liveData') == undefined) return;
         for(k in liveData){
             kForId=(/[^a-zA-Z]/.test(k[0]) ? 'a' : '')+k; //k[0] is not in a-zA-Z then we need to add 'a'
+            kForId=kForId.replace(/ /g,'_');
             if($(qsp+'#'+kForId) != undefined){
                 var existingElement= $(qsp+'#'+kForId+'Value');
                 if(existingElement.tagName=='INPUT'){
@@ -66,6 +68,9 @@
                 $(qsp+'#'+kForId+'Value').addEventListener('change',function(evt){showCurrentFP(evt.srcElement.id.replace('Value',''),evt.srcElement.val)});
                 showCurrentFP(kForId,liveData[k]);
             }
+        }
+        if($(qsp+'#lastRefresh') != undefined){
+            $(qsp+'#lastRefresh').innerText=(new Date()).toLocaleString();
         }
     }
 
@@ -103,7 +108,6 @@
         statusEventSource.addEventListener('message', function(e) {
             console.log('statusEvt'+qsp[8]+' : '+e.data);
             parseLiveData(JSON.parse(e.data));
-            $(qsp+'#lastRefresh').innerText=' ('+(new Date()).toLocaleString()+')';
         });
     }
 </script>
